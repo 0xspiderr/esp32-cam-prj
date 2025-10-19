@@ -1,8 +1,13 @@
 #include <Arduino.h>
+#include <esp_camera.h>
+#include "WebServer.h"
+#include "WiFi.h"
 
 
 #define FLASH_PIN 4
 #define BAUD_RATE 115200
+#define CAMERA_MODEL_AI_THINKER
+
 
 void setup()
 {
