@@ -1,0 +1,54 @@
+/*****************************************************
+ *  INCLUDES
+ *****************************************************/
+#include "camera.h"
+
+/*****************************************************
+ *  DEFINITIONS
+ *****************************************************/
+void configure_camera()
+{
+    camera_config.ledc_channel = LEDC_CHANNEL_0;
+    camera_config.ledc_timer = LEDC_TIMER_0;
+    camera_config.pin_d0 = Y2_GPIO_NUM;
+    camera_config.pin_d1 = Y3_GPIO_NUM;
+    camera_config.pin_d2 = Y4_GPIO_NUM;
+    camera_config.pin_d3 = Y5_GPIO_NUM;
+    camera_config.pin_d4 = Y6_GPIO_NUM;
+    camera_config.pin_d5 = Y7_GPIO_NUM;
+    camera_config.pin_d6 = Y8_GPIO_NUM;
+    camera_config.pin_d7 = Y9_GPIO_NUM;
+    camera_config.pin_xclk = XCLK_GPIO_NUM;
+    camera_config.pin_pclk = PCLK_GPIO_NUM;
+    camera_config.pin_vsync = VSYNC_GPIO_NUM;
+    camera_config.pin_href = HREF_GPIO_NUM;
+    camera_config.pin_sccb_sda = SIOD_GPIO_NUM;
+    camera_config.pin_sccb_scl = SIOC_GPIO_NUM;
+    camera_config.pin_pwdn = PWDN_GPIO_NUM;
+    camera_config.pin_reset = RESET_GPIO_NUM;
+    camera_config.xclk_freq_hz = 20000000;
+    camera_config.frame_size = FRAMESIZE_UXGA;
+    camera_config.pixel_format = PIXFORMAT_JPEG;
+    camera_config.jpeg_quality = 10;
+    camera_config.fb_count = 1;
+}
+
+esp_err_t init_camera()
+{
+    // power up the camera if the power down line gpio pin is defined
+    if (PWDN_GPIO_NUM != -1)
+    {
+        pinMode(PWDN_GPIO_NUM, OUTPUT);
+        digitalWrite(PWDN_GPIO_NUM, LOW);
+    }
+
+    configure_camera();
+    // initialize the camera and check for any errors during init
+    esp_err_t err = esp_camera_init(&camera_config);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "camera initialization failed");
+        return err;
+    }
+    return ESP_OK;
+}
