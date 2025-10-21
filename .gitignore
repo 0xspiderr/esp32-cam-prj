@@ -1,2 +1,2 @@
 .pio
-include/wifi_credentials.h
+lib/wifi_credentials.h
