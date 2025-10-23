@@ -43,10 +43,7 @@ esp_err_t init_camera()
         digitalWrite(PWDN_GPIO_NUM, LOW);
     }
 
-    // initialize camera flash with pwm
-    ledcSetup(led_channel, frequency, cam_resolution);
-    ledcAttachPin(FLASH_LED_GPIO_PIN, led_channel);
-
+    setup_camera_flash_pwm();
     configure_camera();
     // initialize the camera and check for any errors during init
     esp_err_t err = esp_camera_init(&camera_config);
@@ -57,6 +54,14 @@ esp_err_t init_camera()
     }
 
     return ESP_OK;
+}
+
+/* camera flash functions */
+void setup_camera_flash_pwm()
+{
+    // initialize camera flash with pwm
+    ledcSetup(led_channel, frequency, cam_resolution);
+    ledcAttachPin(FLASH_LED_GPIO_PIN, led_channel);
 }
 
 void set_flash_brightness(int duty_cycle)
@@ -71,4 +76,4 @@ bool is_duty_range_ok(int duty_cycle)
 {
     return duty_cycle >= 0 && duty_cycle <= 255;
 }
-
+/************************************************/

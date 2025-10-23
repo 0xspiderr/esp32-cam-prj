@@ -4,21 +4,19 @@
  *  INCLUDES
  *****************************************************/
 #include <WebServer.h>
-#include <esp_camera.h>
 #include "../../include/wifi_credentials.h"
 
 
 /*****************************************************
  *  VARIABLES
  *****************************************************/
-static const char *URL = "/stream";
 static WebServer server(80);
 
 /*****************************************************
  *  PROTOTYPES
  *****************************************************/
-void init_wifi  (void);
-void init_server(void);
-
+void init_wifi    (void);
+void init_server  (void);
+void get_root_page(void);
 
 #endif //NETWORKING_H

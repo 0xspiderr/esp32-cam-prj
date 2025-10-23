@@ -47,9 +47,10 @@ const int cam_resolution = 8;
 /*****************************************************
  *  PROTOTYPES
  *****************************************************/
-void      configure_camera    (void);
-void      set_flash_brightness(int);
-bool      is_duty_range_ok    (int);
-esp_err_t init_camera         (void);
+void      configure_camera      (void);
+void      setup_camera_flash_pwm(void);
+void      set_flash_brightness  (int);
+bool      is_duty_range_ok      (int);
+esp_err_t init_camera           (void);
 
 #endif //ESP32_CAM_PRJ_CAMERA_H

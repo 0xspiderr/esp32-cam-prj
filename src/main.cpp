@@ -21,17 +21,17 @@ void setup()
         return;
 
     init_wifi();
-    init_server();
 }
 
 void loop()
 {
-    for (int i = 0; i < 256; ++i) {
-        set_flash_brightness(i);
-        delay(20);
-    }
-    for (int i = 255; i > 0; --i) {
-        set_flash_brightness(i);
-        delay(20);
-    }
+    server.handleClient();
+    // for (int i = 0; i < 256; ++i) {
+    //     set_flash_brightness(i);
+    //     delay(20);
+    // }
+    // for (int i = 255; i > 0; --i) {
+    //     set_flash_brightness(i);
+    //     delay(20);
+    // }
 }

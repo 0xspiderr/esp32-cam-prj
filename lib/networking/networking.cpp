@@ -2,6 +2,7 @@
  *  INCLUDES
  *****************************************************/
 #include "networking.h"
+#include "webpage.h"
 
 
 /*****************************************************
@@ -9,10 +10,7 @@
  *****************************************************/
 void init_wifi()
 {
-    WiFi.persistent(true);  // make wifi persistent(save credentials if rebooting)
-    WiFi.mode(WIFI_STA);    // station mode, esp connects to an access point
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
     Serial.println("Attempting to connect to WiFi");
     while (WiFi.status() != WL_CONNECTED)
     {
@@ -20,14 +18,26 @@ void init_wifi()
         delay(100);
     }
 
-    Serial.println("Connected to WiFi: http://");
-    Serial.print(String(WiFi.localIP().toString().c_str()) + "/");
-    Serial.print(URL);
+    // if the connection to the wifi was successfull, initialize the server
+    Serial.println("");
+    Serial.print("Connected to WiFi: http://");
+    Serial.print(WiFi.localIP());
+    Serial.println("RSSI(signal strength):" + WiFi.RSSI());
+
+    init_server();
 }
 
 
+// starts the server and registers callbacks
 void init_server()
 {
-
+    server.on("/", get_root_page);
+    server.begin();
 }
 
+
+// server callback functions
+void get_root_page()
+{
+    server.send(200, "text/plain", index_html);
+}
