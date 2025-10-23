@@ -5,7 +5,7 @@
  *****************************************************/
 #include <WebServer.h>
 #include <esp_camera.h>
-#include "../wifi_credentials.h"
+#include "../../include/wifi_credentials.h"
 
 
 /*****************************************************
@@ -17,8 +17,8 @@ static WebServer server(80);
 /*****************************************************
  *  PROTOTYPES
  *****************************************************/
-void init_wifi(void);
+void init_wifi  (void);
 void init_server(void);
-void handle_stream(void);
+
 
 #endif //NETWORKING_H

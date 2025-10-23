@@ -6,7 +6,6 @@
 #include "../lib/networking/networking.h"
 
 
-#define FLASH_PIN 4
 #define BAUD_RATE 115200
 
 
@@ -27,5 +26,12 @@ void setup()
 
 void loop()
 {
-    server.handleClient();
+    for (int i = 0; i < 256; ++i) {
+        set_flash_brightness(i);
+        delay(20);
+    }
+    for (int i = 255; i > 0; --i) {
+        set_flash_brightness(i);
+        delay(20);
+    }
 }

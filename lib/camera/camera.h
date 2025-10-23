@@ -39,10 +39,17 @@
 static const char* TAG = "camera";
 static camera_config_t camera_config;
 
+// camera flash pwm config
+const int frequency = 5000;
+const int led_channel = 0; // if using pwm with the camera and esp32 at the same time, use another channel
+const int cam_resolution = 8;
+
 /*****************************************************
  *  PROTOTYPES
  *****************************************************/
-void            configure_camera(void);
-esp_err_t       init_camera(void);
+void      configure_camera    (void);
+void      set_flash_brightness(int);
+bool      is_duty_range_ok    (int);
+esp_err_t init_camera         (void);
 
 #endif //ESP32_CAM_PRJ_CAMERA_H
