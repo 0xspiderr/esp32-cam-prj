@@ -16,9 +16,9 @@ void setup()
     // wait for the serial port monitor to connect
     while (!Serial);
 
-    // stop setup if camera couldn't initialize
-    if (init_camera() != ESP_OK)
-        return;
+    // // stop setup if camera couldn't initialize
+    // if (init_camera() != ESP_OK)
+    //     return;
 
     init_wifi();
 }
