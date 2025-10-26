@@ -2,12 +2,11 @@
  *  INCLUDES
  *****************************************************/
 #include "networking.h"
-
 #include "../camera/camera.h"
 
 
 /*****************************************************
- *  DECLARATIONS
+ *  DEFINITIONS
  *****************************************************/
 void init_wifi()
 {
@@ -15,6 +14,7 @@ void init_wifi()
     WiFi.mode(WIFI_MODE_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     Serial.println("Attempting to connect to WiFi");
+    // try wifi connection, restart esp after 15 seconds if not succesfull and try again.
     while (WiFi.status() != WL_CONNECTED)
     {
         Serial.print(".");
@@ -30,13 +30,14 @@ void init_wifi()
     Serial.print("Connected to WiFi: http://");
     Serial.print(WiFi.localIP());
     Serial.println("");
-    Serial.println("RSSI(signal strength):");
+    Serial.println("RSSI(signal strength):");   // numbers closer to 0 mean better signal strength
     Serial.print(WiFi.RSSI());
     Serial.println("");
 }
 
 
 // starts the server and registers URIs
+// TODO: move uri setup to a different function
 void init_server()
 {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
@@ -84,7 +85,7 @@ static esp_err_t index_handler(httpd_req_t *req)
     return httpd_resp_send(req, INDEX_HTML, strlen(INDEX_HTML));
 }
 
-
+// TODO: move camera logic to a dedicated function in the camera module
 static esp_err_t stream_handler(httpd_req_t *req)
 {
     camera_fb_t *fb       = NULL; // camera frame buffer
@@ -160,7 +161,7 @@ static esp_err_t stream_handler(httpd_req_t *req)
 }
 
 
-esp_err_t flash_handler(httpd_req_t *req)
+static esp_err_t flash_handler(httpd_req_t *req)
 {
     if (req->method == HTTP_POST)
     {

@@ -28,8 +28,8 @@ static httpd_handle_t stream_httpd = NULL;
 /*****************************************************
  *  PROTOTYPES
  *****************************************************/
-void init_wifi                 (void);
-void init_server               (void);
+void             init_wifi     (void);
+void             init_server   (void);
 static esp_err_t index_handler (httpd_req_t *);
 static esp_err_t stream_handler(httpd_req_t *);
 static esp_err_t flash_handler (httpd_req_t *);

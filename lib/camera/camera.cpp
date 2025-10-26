@@ -62,14 +62,14 @@ esp_err_t init_camera()
 }
 
 /* camera flash functions */
-void setup_camera_flash_pwm()
+static void setup_camera_flash_pwm()
 {
     // initialize camera flash with pwm
     ledcSetup(led_channel, frequency, cam_resolution);
     ledcAttachPin(FLASH_LED_GPIO_PIN, led_channel);
 }
 
-void set_flash_brightness(int duty_cycle)
+static void set_flash_brightness(int duty_cycle)
 {
     if (is_duty_range_ok(duty_cycle) == false)
         return;
@@ -88,7 +88,7 @@ void toggle_camera_flash()
 }
 
 
-bool is_duty_range_ok(int duty_cycle)
+static bool is_duty_range_ok(int duty_cycle)
 {
     return duty_cycle >= LOWER_DUTY_LIMIT && duty_cycle <= UPPER_DUTY_LIMIT;
 }

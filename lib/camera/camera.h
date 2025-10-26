@@ -47,17 +47,16 @@ static camera_config_t camera_config;
 static const int frequency = 5000;
 static const int led_channel = 0; // if using pwm with the camera and esp32 at the same time, use another channel
 static const int cam_resolution = 8;
-
 static bool flash_state = false;
 
 /*****************************************************
  *  PROTOTYPES
  *****************************************************/
-void      configure_camera      (void);
-void      setup_camera_flash_pwm(void);
-void      set_flash_brightness  (int);
-void      toggle_camera_flash   ();
-bool      is_duty_range_ok      (int);
-esp_err_t init_camera           (void);
+void        configure_camera      (void);
+static void setup_camera_flash_pwm(void);
+static void set_flash_brightness  (int);
+void        toggle_camera_flash   (void);
+static bool is_duty_range_ok      (int);
+esp_err_t   init_camera           (void);
 
 #endif //ESP32_CAM_PRJ_CAMERA_H

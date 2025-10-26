@@ -7,10 +7,15 @@
 #include "soc/rtc_cntl_reg.h" // for disabling brownout detector
 
 
+/*****************************************************
+ *  DEFINES
+ *****************************************************/
 #define BAUD_RATE 115200
 
 
-
+/*****************************************************
+ *  BUILTIN ESP32 FUNCTIONS
+ *****************************************************/
 void setup()
 {
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector
