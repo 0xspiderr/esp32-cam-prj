@@ -3,7 +3,6 @@
  *****************************************************/
 #include "networking.h"
 
-WebServer server(80);
 
 /*****************************************************
  *  DECLARATIONS
@@ -25,7 +24,6 @@ void init_wifi()
         }
     }
 
-    // if the connection to the wifi was successful, initialize the server
     Serial.println("");
     Serial.print("Connected to WiFi: http://");
     Serial.print(WiFi.localIP());
@@ -33,37 +31,28 @@ void init_wifi()
     Serial.println("RSSI(signal strength):");
     Serial.print(WiFi.RSSI());
     Serial.println("");
-
-    init_server();
 }
 
 
-// starts the server and registers callbacks
+// starts the server and registers URIs
 void init_server()
 {
-    server.on("/", HTTP_GET, get_root_page);
-    // server.on("/api/status", HTTP_GET, get_server_status);
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    httpd_uri_t index_uri =
+    {
+        .uri = "/",
+        .method = HTTP_GET,
+        .handler = index_handler,
+        .user_ctx = NULL
+    };
 
-    // server.onNotFound(server_not_found_msg);
-    server.begin();
+    if (httpd_start(&camera_httpd, &config) == ESP_OK)
+        httpd_register_uri_handler(camera_httpd, &index_uri);
 }
 
 
-// server callback functions
-void get_root_page()
+static esp_err_t index_handler(httpd_req_t *req)
 {
-    Serial.println("Client trying to access home page");
-    server.send(200, "text/plain", "<p>hello world</p>");
-}
-
-
-void get_server_status()
-{
-    server.send(200, "application/json", "{\"status\":\"online\",\"uptime\":\"" + String(millis()/1000) + "\"}");
-}
-
-
-void server_not_found_msg()
-{
-    server.send(404, "application/json", "{\"error\":\"endpoint not found\"}");
+    httpd_resp_set_type(req, "text/html");
+    return httpd_resp_send(req, (const char *)INDEX_HTML, strlen(INDEX_HTML));
 }

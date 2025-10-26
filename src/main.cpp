@@ -16,16 +16,16 @@ void setup()
     // wait for the serial port monitor to connect
     while (!Serial);
 
-    // // stop setup if camera couldn't initialize
-    // if (init_camera() != ESP_OK)
-    //     return;
+    // stop setup if camera couldn't initialize
+    if (init_camera() != ESP_OK)
+         return;
 
     init_wifi();
+    init_server(); // if the connection to the wifi was successfuly established, initialize the server
 }
 
 void loop()
 {
-    server.handleClient();
     // for (int i = 0; i < 256; ++i) {
     //     set_flash_brightness(i);
     //     delay(20);
