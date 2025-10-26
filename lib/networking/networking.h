@@ -6,6 +6,7 @@
 #include <WebServer.h>
 #include "../../include/wifi_credentials.h"
 #include "esp_http_server.h"
+#include <esp_camera.h>
 
 
 /*****************************************************
@@ -27,10 +28,11 @@ static httpd_handle_t stream_httpd = NULL;
 /*****************************************************
  *  PROTOTYPES
  *****************************************************/
-void init_wifi                (void);
-void init_server              (void);
-static esp_err_t index_handler(httpd_req_t *);
+void init_wifi                 (void);
+void init_server               (void);
+static esp_err_t index_handler (httpd_req_t *);
 static esp_err_t stream_handler(httpd_req_t *);
+static esp_err_t flash_handler (httpd_req_t *);
 
 
 /*****************************************************
@@ -52,8 +54,12 @@ height:auto;
 </head>
 <body>
 <img src="" id="photo">
+<br>
+<button onclick="toggleFlash()">toggle flash</button>
 <script>
 window.onload=document.getElementById("photo").src=window.location.href.slice(0,-1)+":81/stream";
+function toggleFlash(){
+fetch('/flash', {method:'POST'});}
 </script>
 </body>
 </html>)rawliteral";

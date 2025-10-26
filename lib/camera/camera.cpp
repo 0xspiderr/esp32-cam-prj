@@ -77,6 +77,17 @@ void set_flash_brightness(int duty_cycle)
     ledcWrite(led_channel, duty_cycle);
 }
 
+
+void toggle_camera_flash()
+{
+    flash_state = !flash_state;
+    if (flash_state == true)
+        set_flash_brightness(128);
+    else
+        set_flash_brightness(0);
+}
+
+
 bool is_duty_range_ok(int duty_cycle)
 {
     return duty_cycle >= LOWER_DUTY_LIMIT && duty_cycle <= UPPER_DUTY_LIMIT;

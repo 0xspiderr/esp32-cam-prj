@@ -3,7 +3,7 @@
  *****************************************************/
 #include "networking.h"
 
-#include <esp_camera.h>
+#include "../camera/camera.h"
 
 
 /*****************************************************
@@ -57,8 +57,19 @@ void init_server()
         .user_ctx = NULL
     };
 
+    httpd_uri_t flash_uri =
+    {
+        .uri = "/flash",
+        .method = HTTP_POST,
+        .handler = flash_handler,
+        .user_ctx = NULL
+    };
+
     if (httpd_start(&camera_httpd, &config) == ESP_OK)
+    {
         httpd_register_uri_handler(camera_httpd, &index_uri);
+        httpd_register_uri_handler(camera_httpd, &flash_uri);
+    }
 
     config.server_port = 81;
     config.ctrl_port = 81;  // udp port
@@ -146,4 +157,19 @@ static esp_err_t stream_handler(httpd_req_t *req)
     }
 
     return res;
+}
+
+
+esp_err_t flash_handler(httpd_req_t *req)
+{
+    if (req->method == HTTP_POST)
+    {
+        toggle_camera_flash();
+        httpd_resp_send(req, "toggled flash", HTTPD_RESP_USE_STRLEN);
+        return ESP_OK;
+    }
+
+    // for any methods aside http_post
+    httpd_resp_send_404(req);
+    return ESP_FAIL;
 }
