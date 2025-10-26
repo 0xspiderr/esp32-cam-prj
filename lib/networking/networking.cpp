@@ -6,6 +6,19 @@
 
 
 /*****************************************************
+ *  VARIABLES
+ *****************************************************/
+// for error logging
+static const char *TAG = "NETWORKING";
+// stream specific variables
+const char    *STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
+const char    *STREAM_BOUNDARY     = "\r\n--" PART_BOUNDARY "\r\n";
+const char    *STREAM_PART         = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
+httpd_handle_t camera_httpd        = NULL;
+httpd_handle_t stream_httpd        = NULL;
+
+
+/*****************************************************
  *  DEFINITIONS
  *****************************************************/
 void init_wifi()
@@ -79,6 +92,7 @@ void init_server()
 }
 
 
+/* Endpoint handlers ******************************************************/
 static esp_err_t index_handler(httpd_req_t *req)
 {
     httpd_resp_set_type(req, "text/html");
@@ -174,3 +188,5 @@ static esp_err_t flash_handler(httpd_req_t *req)
     httpd_resp_send_404(req);
     return ESP_FAIL;
 }
+
+/**************************************************************************/

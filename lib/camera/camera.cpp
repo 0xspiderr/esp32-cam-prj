@@ -2,6 +2,19 @@
  *  INCLUDES
  *****************************************************/
 #include "camera.h"
+#include "../networking/networking.h"
+
+/*****************************************************
+ *  VARIABLES
+ *****************************************************/
+camera_config_t camera_config;
+// for error logging
+static const char *TAG = "CAMERA";
+// camera flash pwm config
+const int frequency      = 5000;
+const int led_channel    = 0; // if using pwm with the camera and esp32 at the same time, use another channel
+const int cam_resolution = 8;
+bool      flash_state    = false;
 
 
 /*****************************************************
@@ -50,7 +63,7 @@ esp_err_t init_camera()
     esp_err_t err = esp_camera_init(&camera_config);
     if (err != ESP_OK)
     {
-        ESP_LOGE("CAMERA", "camera initialization failed");
+        ESP_LOGE(TAG, "camera initialization failed");
         return err;
     }
 

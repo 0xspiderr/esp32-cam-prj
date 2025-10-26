@@ -6,7 +6,6 @@
 #include <WebServer.h>
 #include "../../include/wifi_credentials.h"
 #include "esp_http_server.h"
-#include <esp_camera.h>
 
 
 /*****************************************************
@@ -16,20 +15,12 @@
 
 
 /*****************************************************
- *  VARIABLES
- *****************************************************/
-static const char *STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
-static const char *STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
-static const char *STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
-static httpd_handle_t camera_httpd = NULL;
-static httpd_handle_t stream_httpd = NULL;
-
-
-/*****************************************************
  *  PROTOTYPES
  *****************************************************/
 void             init_wifi     (void);
 void             init_server   (void);
+
+// internal functions used only in this unit
 static esp_err_t index_handler (httpd_req_t *);
 static esp_err_t stream_handler(httpd_req_t *);
 static esp_err_t flash_handler (httpd_req_t *);
