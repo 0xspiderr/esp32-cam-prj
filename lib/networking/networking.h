@@ -27,9 +27,10 @@ static httpd_handle_t stream_httpd = NULL;
 /*****************************************************
  *  PROTOTYPES
  *****************************************************/
-void init_wifi           (void);
-void init_server         (void);
+void init_wifi                (void);
+void init_server              (void);
 static esp_err_t index_handler(httpd_req_t *);
+static esp_err_t stream_handler(httpd_req_t *);
 
 
 /*****************************************************
@@ -38,13 +39,22 @@ static esp_err_t index_handler(httpd_req_t *);
 // PROGMEM - puts this variable in flash memory and rawliteral declaration prevents the need for escape chars
 static const char PROGMEM INDEX_HTML[] = R"rawliteral(
 <html>
-    <head>
-        <title>esp cam test</title>
-        <meta name="viewport" content="width=device-width, intial-scale=1">
-    </head>
-    <body>
-        <img src="" id="photo">
-    </body>
-</html>
-)rawliteral";
+<head>
+<title>esp cam test</title>
+<meta name="viewport" content="width=device-width, intial-scale=1">
+<style>
+img{
+width:auto;
+max-width:100%;
+height:auto;
+}
+</style>
+</head>
+<body>
+<img src="" id="photo">
+<script>
+window.onload=document.getElementById("photo").src=window.location.href.slice(0,-1)+":81/stream";
+</script>
+</body>
+</html>)rawliteral";
 #endif //NETWORKING_H

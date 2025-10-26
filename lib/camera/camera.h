@@ -6,7 +6,8 @@
  *****************************************************/
 #include <esp_camera.h>
 #include <esp_err.h>
-#include <Arduino.h>
+#include <esp32-hal-gpio.h>
+
 
 /*****************************************************
  *  DEFINES
@@ -32,17 +33,20 @@
 #define PCLK_GPIO_NUM      22
 #define FLASH_LED_GPIO_PIN 4
 
+// duty cycle defines
+#define UPPER_DUTY_LIMIT 255
+#define LOWER_DUTY_LIMIT 0
+
 /*****************************************************
  *  VARIABLES
  *****************************************************/
 // for error logging
-static const char* TAG = "camera";
 static camera_config_t camera_config;
 
 // camera flash pwm config
-const int frequency = 5000;
-const int led_channel = 0; // if using pwm with the camera and esp32 at the same time, use another channel
-const int cam_resolution = 8;
+static const int frequency = 5000;
+static const int led_channel = 0; // if using pwm with the camera and esp32 at the same time, use another channel
+static const int cam_resolution = 8;
 
 /*****************************************************
  *  PROTOTYPES

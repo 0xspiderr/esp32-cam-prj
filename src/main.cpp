@@ -1,16 +1,19 @@
-#include <Arduino.h>
-#include "WebServer.h"
-#include "WiFi.h"
-#include "esp_camera.h"
-#include "../lib/camera/camera.h"
-#include "../lib/networking/networking.h"
+/*****************************************************
+ *  INCLUDES
+ *****************************************************/
+#include <HardwareSerial.h>
+#include "camera.h"
+#include "networking.h"
+#include "soc/rtc_cntl_reg.h" // for disabling brownout detector
 
 
 #define BAUD_RATE 115200
 
 
+
 void setup()
 {
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector
     Serial.begin(BAUD_RATE);
 
     // wait for the serial port monitor to connect
