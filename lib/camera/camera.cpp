@@ -54,6 +54,10 @@ esp_err_t init_camera()
         return err;
     }
 
+    // flip image because it's shown upside down
+    sensor_t *sensor = esp_camera_sensor_get();
+    sensor->set_vflip(sensor, 1);
+
     return ESP_OK;
 }
 
