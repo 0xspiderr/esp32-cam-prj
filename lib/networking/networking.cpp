@@ -102,11 +102,11 @@ static esp_err_t index_handler(httpd_req_t *req)
 // TODO: move camera logic to a dedicated function in the camera module
 static esp_err_t stream_handler(httpd_req_t *req)
 {
-    camera_fb_t *fb       = NULL; // camera frame buffer
-    size_t      fb_len    = 0;
-    uint8_t     *fb_buf   = NULL;
+    camera_fb_t *fb           = NULL; // camera frame buffer
+    size_t      fb_len        = 0;
+    uint8_t     *fb_buf       = NULL;
     char        *part_buf[64];
-    esp_err_t    res      = ESP_OK;
+    esp_err_t    res          = ESP_OK;
 
     res = httpd_resp_set_type(req, STREAM_CONTENT_TYPE);
     if (res != ESP_OK)
@@ -114,61 +114,36 @@ static esp_err_t stream_handler(httpd_req_t *req)
 
     while (true)
     {
+        fb = NULL;
+        fb_buf = NULL;
         fb = esp_camera_fb_get();
         if (!fb)
         {
-            ESP_LOGE("NETWORKING", "camera photo capture failed");
+            ESP_LOGE(TAG, "camera photo capture failed");
             res = ESP_FAIL;
+            break;
         }
-        else
-        {
-            if (fb->width > 400)
-            {
-                if (fb->format != PIXFORMAT_JPEG)
-                {
-                    bool jpeg_converted = frame2jpg(fb, 80, &fb_buf, &fb_len);
-                    esp_camera_fb_return(fb);
-                    fb = NULL;
-                    if (!jpeg_converted)
-                    {
-                        ESP_LOGE("NETWORKING", "jpeg compression failed");
-                        res = ESP_FAIL;
-                    }
-                }
-                else
-                {
-                    fb_len = fb->len;
-                    fb_buf = fb->buf;
-                }
-            }
-            if (res == ESP_OK)
-            {
-                ssize_t hlen = snprintf((char*)part_buf, 64, STREAM_PART, fb_len);
-                res = httpd_resp_send_chunk(req, (const char*)part_buf, hlen);
-            }
-            if (res == ESP_OK)
-            {
-                res = httpd_resp_send_chunk(req, (const char*)fb_buf, fb_len);
-            }
-            if (res == ESP_OK)
-            {
-                res = httpd_resp_send_chunk(req, STREAM_BOUNDARY, strlen(STREAM_BOUNDARY));
-            }
-            if (fb)
-            {
-                esp_camera_fb_return(fb);
-                fb = NULL;
-                fb_buf = NULL;
-            }
-            else if (fb_buf)
-            {
-                free(fb_buf);
-                fb_buf = NULL;
-            }
 
-            if (res != ESP_OK)
-                break;
+        fb_len = fb->len;
+        fb_buf = fb->buf;
+
+        // send part header
+        if (res == ESP_OK)
+        {
+            ssize_t hlen = snprintf((char*)part_buf, 64, STREAM_PART, fb_len);
+            res = httpd_resp_send_chunk(req, (const char*)part_buf, hlen);
         }
+        // send frame buffer data
+        if (res == ESP_OK)
+            res = httpd_resp_send_chunk(req, (const char*)fb_buf, fb_len);
+        // send stream boundary
+        if (res == ESP_OK)
+            res = httpd_resp_send_chunk(req, STREAM_BOUNDARY, strlen(STREAM_BOUNDARY));
+
+        if (fb)
+            esp_camera_fb_return(fb);
+
+        vTaskDelay(pdMS_TO_TICKS(CAMERA_STREAM_DELAY));
     }
 
     return res;
