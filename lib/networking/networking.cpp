@@ -11,11 +11,11 @@
 // for error logging
 static const char *TAG = "NETWORKING";
 // stream specific variables
-const char    *STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
-const char    *STREAM_BOUNDARY     = "\r\n--" PART_BOUNDARY "\r\n";
-const char    *STREAM_PART         = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
-httpd_handle_t camera_httpd        = NULL;
-httpd_handle_t stream_httpd        = NULL;
+const char        *STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
+const char        *STREAM_BOUNDARY     = "\r\n--" PART_BOUNDARY "\r\n";
+const char        *STREAM_PART         = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
+httpd_handle_t    camera_httpd         = NULL;
+httpd_handle_t    stream_httpd         = NULL;
 
 
 /*****************************************************
@@ -99,7 +99,7 @@ static esp_err_t index_handler(httpd_req_t *req)
     return httpd_resp_send(req, INDEX_HTML, strlen(INDEX_HTML));
 }
 
-// TODO: move camera logic to a dedicated function in the camera module
+
 static esp_err_t stream_handler(httpd_req_t *req)
 {
     camera_fb_t *fb           = NULL; // camera frame buffer
@@ -117,16 +117,25 @@ static esp_err_t stream_handler(httpd_req_t *req)
         fb = NULL;
         fb_buf = NULL;
         fb = esp_camera_fb_get();
+        fb_len = fb->len;
+        fb_buf = fb->buf;
+
         if (!fb)
         {
             ESP_LOGE(TAG, "camera photo capture failed");
             res = ESP_FAIL;
             break;
         }
-
-        fb_len = fb->len;
-        fb_buf = fb->buf;
-
+        if(fb->format != PIXFORMAT_JPEG)
+        {
+            bool jpeg_converted = frame2jpg(fb, 80, &fb_buf, &fb_len);
+            if(!jpeg_converted)
+            {
+                ESP_LOGE(TAG, "JPEG compression failed!");
+                res = ESP_FAIL;
+            }
+            ESP_LOGI(TAG, "JPEG compression successful: ", fb_len);
+        }
         // send part header
         if (res == ESP_OK)
         {
@@ -142,8 +151,6 @@ static esp_err_t stream_handler(httpd_req_t *req)
 
         if (fb)
             esp_camera_fb_return(fb);
-
-        vTaskDelay(pdMS_TO_TICKS(CAMERA_STREAM_DELAY));
     }
 
     return res;

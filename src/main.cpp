@@ -31,7 +31,6 @@ void setup()
         err = init_camera();
     }
 
-
     init_wifi();
     init_server(); // if the connection to the wifi was successfuly established, initialize the server
 }

@@ -12,8 +12,6 @@
 /*****************************************************
  *  DEFINES
  *****************************************************/
-#define CAMERA_MODEL_AI_THINKER
-
 // Camera specific config pins
 #define PWDN_GPIO_NUM      32
 #define RESET_GPIO_NUM     -1
@@ -36,6 +34,9 @@
 // duty cycle defines
 #define UPPER_DUTY_LIMIT 255
 #define LOWER_DUTY_LIMIT 0
+// esp cam sensor defines
+#define NO_EFFECT        0
+#define GRAYSCALE_EFFECT 2
 
 
 /*****************************************************
@@ -44,6 +45,7 @@
 void        configure_camera      (void);
 void        toggle_camera_flash   (void);
 esp_err_t   init_camera           (void);
+
 
 // internal functions used only in this unit
 static void setup_camera_flash_pwm(void);
