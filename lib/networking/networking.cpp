@@ -103,8 +103,6 @@ static esp_err_t index_handler(httpd_req_t *req)
 static esp_err_t stream_handler(httpd_req_t *req)
 {
     camera_fb_t *fb           = NULL; // camera frame buffer
-    size_t      fb_len        = 0;
-    uint8_t     *fb_buf       = NULL;
     char        *part_buf[64];
     esp_err_t    res          = ESP_OK;
 
@@ -114,11 +112,7 @@ static esp_err_t stream_handler(httpd_req_t *req)
 
     while (true)
     {
-        fb = NULL;
-        fb_buf = NULL;
         fb = esp_camera_fb_get();
-        fb_len = fb->len;
-        fb_buf = fb->buf;
 
         if (!fb)
         {
@@ -126,31 +120,24 @@ static esp_err_t stream_handler(httpd_req_t *req)
             res = ESP_FAIL;
             break;
         }
-        if(fb->format != PIXFORMAT_JPEG)
-        {
-            bool jpeg_converted = frame2jpg(fb, 80, &fb_buf, &fb_len);
-            if(!jpeg_converted)
-            {
-                ESP_LOGE(TAG, "JPEG compression failed!");
-                res = ESP_FAIL;
-            }
-            ESP_LOGI(TAG, "JPEG compression successful: ", fb_len);
-        }
+
         // send part header
         if (res == ESP_OK)
         {
-            ssize_t hlen = snprintf((char*)part_buf, 64, STREAM_PART, fb_len);
+            ssize_t hlen = snprintf((char*)part_buf, 64, STREAM_PART, fb->len);
             res = httpd_resp_send_chunk(req, (const char*)part_buf, hlen);
         }
         // send frame buffer data
         if (res == ESP_OK)
-            res = httpd_resp_send_chunk(req, (const char*)fb_buf, fb_len);
+            res = httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len);
         // send stream boundary
         if (res == ESP_OK)
             res = httpd_resp_send_chunk(req, STREAM_BOUNDARY, strlen(STREAM_BOUNDARY));
 
-        if (fb)
-            esp_camera_fb_return(fb);
+        esp_camera_fb_return(fb);
+
+        if (res != ESP_OK)
+            break;
     }
 
     return res;

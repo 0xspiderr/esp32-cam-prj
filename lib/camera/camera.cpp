@@ -41,10 +41,10 @@ void configure_camera()
     camera_config.pin_pwdn     = PWDN_GPIO_NUM;
     camera_config.pin_reset    = RESET_GPIO_NUM;
     camera_config.xclk_freq_hz = 20000000;
-    camera_config.frame_size   = FRAMESIZE_QVGA;  // good frame size for streaming, SVGA/QVGA would be another choice
-    camera_config.pixel_format = PIXFORMAT_JPEG; // good format for streaming, GRAYSCALE would be another choice
-    camera_config.jpeg_quality = 10;             // lower number -> higher quality
-    camera_config.fb_count     = 2;              // fb_count > 1 -> the driver works in continous mode
+    camera_config.frame_size   = FRAMESIZE_QVGA;      // good frame size for streaming, SVGA/QVGA would be another choice
+    camera_config.pixel_format = PIXFORMAT_JPEG;      // good format for streaming, GRAYSCALE would be another choice
+    camera_config.jpeg_quality = 20;                  // lower number -> higher quality
+    camera_config.fb_count     = 2;                   // fb_count > 1 -> the driver works in continous mode
     camera_config.grab_mode    = CAMERA_GRAB_WHEN_EMPTY;
 }
 
@@ -71,8 +71,7 @@ esp_err_t init_camera()
     sensor_t *sensor = esp_camera_sensor_get();
     sensor->set_vflip(sensor, 1);
     sensor->set_hmirror(sensor, 1);
-    sensor->set_brightness(sensor, 2);
-    sensor->set_special_effect(sensor, GRAYSCALE_EFFECT);
+    // sensor->set_brightness(sensor, 2);
 
     return ESP_OK;
 }
