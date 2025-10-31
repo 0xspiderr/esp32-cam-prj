@@ -105,6 +105,8 @@ static esp_err_t stream_handler(httpd_req_t *req)
     camera_fb_t *fb           = NULL; // camera frame buffer
     char        *part_buf[64];
     esp_err_t    res          = ESP_OK;
+    uint8_t     *jpg_buf      = NULL;
+    size_t       jpg_buf_len  = 0;
 
     res = httpd_resp_set_type(req, STREAM_CONTENT_TYPE);
     if (res != ESP_OK)
@@ -113,6 +115,8 @@ static esp_err_t stream_handler(httpd_req_t *req)
     while (true)
     {
         fb = esp_camera_fb_get();
+        jpg_buf_len = 0;
+        jpg_buf = NULL;
 
         if (!fb)
         {
@@ -121,18 +125,41 @@ static esp_err_t stream_handler(httpd_req_t *req)
             break;
         }
 
+        if (fb->format != PIXFORMAT_JPEG)
+        {
+            bool valid_jpg = frame2jpg(fb, 80, &jpg_buf, &jpg_buf_len);
+            if (!valid_jpg)
+            {
+                ESP_LOGE(TAG, "JPEG compression failed");
+                esp_camera_fb_return(fb);
+                res = ESP_FAIL;
+                break;
+            }
+        }
+        else
+        {
+            jpg_buf = fb->buf;
+            jpg_buf_len = fb->len;
+        }
+
+        ESP_LOGI(TAG, "JPEG compression succeeded");
+        Serial.println(jpg_buf_len);
+
         // send part header
         if (res == ESP_OK)
         {
-            ssize_t hlen = snprintf((char*)part_buf, 64, STREAM_PART, fb->len);
+            ssize_t hlen = snprintf((char*)part_buf, 64, STREAM_PART, jpg_buf_len);
             res = httpd_resp_send_chunk(req, (const char*)part_buf, hlen);
         }
         // send frame buffer data
         if (res == ESP_OK)
-            res = httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len);
+            res = httpd_resp_send_chunk(req, (const char *)jpg_buf, jpg_buf_len);
         // send stream boundary
         if (res == ESP_OK)
             res = httpd_resp_send_chunk(req, STREAM_BOUNDARY, strlen(STREAM_BOUNDARY));
+
+        if (fb->format != PIXFORMAT_JPEG && jpg_buf)
+            free(jpg_buf);
 
         esp_camera_fb_return(fb);
 
