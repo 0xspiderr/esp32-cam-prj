@@ -21,9 +21,10 @@ void             init_wifi     (void);
 void             init_server   (void);
 
 // internal functions used only in this unit
-static esp_err_t index_handler (httpd_req_t *);
-static esp_err_t stream_handler(httpd_req_t *);
-static esp_err_t flash_handler (httpd_req_t *);
+static esp_err_t index_handler    (httpd_req_t *);
+static esp_err_t stream_handler   (httpd_req_t *);
+static esp_err_t flash_handler    (httpd_req_t *);
+static esp_err_t grayscale_handler(httpd_req_t *);
 
 
 /*****************************************************
@@ -47,10 +48,13 @@ height:auto;
 <img src="" id="photo">
 <br>
 <button onclick="toggleFlash()">toggle flash</button>
+<button onclick="toggleGrayscale()">toggle grayscale</button>
 <script>
 window.onload=document.getElementById("photo").src=window.location.href.slice(0,-1)+":81/stream";
 function toggleFlash(){
 fetch('/flash', {method:'POST'});}
+function toggleGrayscale(){
+fetch('/grayscale', {method:'POST'});}
 </script>
 </body>
 </html>)rawliteral";

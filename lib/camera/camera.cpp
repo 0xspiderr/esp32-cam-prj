@@ -11,10 +11,11 @@ camera_config_t camera_config;
 // for error logging
 static const char *TAG = "CAMERA";
 // camera flash pwm config
-const int frequency      = 5000;
-const int led_channel    = 0; // if using pwm with the camera and esp32 at the same time, use another channel
-const int cam_resolution = 8;
-bool      flash_state    = false;
+const int frequency       = 5000;
+const int led_channel     = 0; // if using pwm with the camera and esp32 at the same time, use another channel
+const int cam_resolution  = 8;
+bool      flash_state     = false;
+bool      grayscale_state = false;
 
 
 /*****************************************************
@@ -44,7 +45,7 @@ void configure_camera()
     camera_config.frame_size   = FRAMESIZE_QVGA;      // good frame size for streaming, SVGA/QVGA would be another choice
     camera_config.pixel_format = PIXFORMAT_JPEG;      // good format for streaming, GRAYSCALE would be another choice
     camera_config.jpeg_quality = 20;                  // lower number -> higher quality
-    camera_config.fb_count     = 2;                   // fb_count > 1 -> the driver works in continous mode
+    camera_config.fb_count     = 1;                   // fb_count > 1 -> the driver works in continous mode
     camera_config.grab_mode    = CAMERA_GRAB_WHEN_EMPTY;
 }
 
@@ -104,6 +105,22 @@ void toggle_camera_flash()
         set_flash_brightness(128);
     else
         set_flash_brightness(0);
+}
+
+
+void toggle_grayscale()
+{
+    grayscale_state = !grayscale_state;
+    sensor_t *sensor = esp_camera_sensor_get();
+    if (grayscale_state == true) {
+        sensor->set_pixformat(sensor, PIXFORMAT_GRAYSCALE);
+        delay(3000);
+    }
+    else
+    {
+        sensor->set_pixformat(sensor, PIXFORMAT_JPEG);
+        delay(3000);
+    }
 }
 
 

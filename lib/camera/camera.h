@@ -44,6 +44,7 @@
  *****************************************************/
 void        configure_camera      (void);
 void        toggle_camera_flash   (void);
+void        toggle_grayscale      (void);
 esp_err_t   init_camera           (void);
 
 

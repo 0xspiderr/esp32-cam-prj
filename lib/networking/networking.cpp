@@ -16,6 +16,7 @@ const char        *STREAM_BOUNDARY     = "\r\n--" PART_BOUNDARY "\r\n";
 const char        *STREAM_PART         = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
 httpd_handle_t    camera_httpd         = NULL;
 httpd_handle_t    stream_httpd         = NULL;
+static bool stream_paused = false;
 
 
 /*****************************************************
@@ -79,10 +80,19 @@ void init_server()
         .user_ctx = NULL
     };
 
+    httpd_uri_t grayscale_uri =
+    {
+        .uri = "/grayscale",
+        .method = HTTP_POST,
+        .handler = grayscale_handler,
+        .user_ctx = NULL
+    };
+
     if (httpd_start(&camera_httpd, &config) == ESP_OK)
     {
         httpd_register_uri_handler(camera_httpd, &index_uri);
         httpd_register_uri_handler(camera_httpd, &flash_uri);
+        httpd_register_uri_handler(camera_httpd, &grayscale_uri);
     }
 
     config.server_port = 81;
@@ -103,7 +113,7 @@ static esp_err_t index_handler(httpd_req_t *req)
 static esp_err_t stream_handler(httpd_req_t *req)
 {
     camera_fb_t *fb           = NULL; // camera frame buffer
-    char        *part_buf[64];
+    char         part_buf[64];
     esp_err_t    res          = ESP_OK;
     uint8_t     *jpg_buf      = NULL;
     size_t       jpg_buf_len  = 0;
@@ -121,8 +131,8 @@ static esp_err_t stream_handler(httpd_req_t *req)
         if (!fb)
         {
             ESP_LOGE(TAG, "camera photo capture failed");
-            res = ESP_FAIL;
-            break;
+            delay(10);
+            continue;
         }
 
         if (fb->format != PIXFORMAT_JPEG)
@@ -132,8 +142,8 @@ static esp_err_t stream_handler(httpd_req_t *req)
             {
                 ESP_LOGE(TAG, "JPEG compression failed");
                 esp_camera_fb_return(fb);
-                res = ESP_FAIL;
-                break;
+                delay(10);
+                continue;
             }
         }
         else
@@ -148,7 +158,7 @@ static esp_err_t stream_handler(httpd_req_t *req)
         // send part header
         if (res == ESP_OK)
         {
-            ssize_t hlen = snprintf((char*)part_buf, 64, STREAM_PART, jpg_buf_len);
+            ssize_t hlen = snprintf(part_buf, 64, STREAM_PART, jpg_buf_len);
             res = httpd_resp_send_chunk(req, (const char*)part_buf, hlen);
         }
         // send frame buffer data
@@ -185,4 +195,17 @@ static esp_err_t flash_handler(httpd_req_t *req)
     return ESP_FAIL;
 }
 
+
+static esp_err_t grayscale_handler(httpd_req_t *req)
+{
+    if (req->method == HTTP_POST)
+    {
+        toggle_grayscale();
+        httpd_resp_send(req, "toggled greyscale", HTTPD_RESP_USE_STRLEN);
+        return ESP_OK;
+    }
+
+    httpd_resp_send_404(req);
+    return ESP_FAIL;
+}
 /**************************************************************************/
