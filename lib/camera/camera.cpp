@@ -3,6 +3,7 @@
  *****************************************************/
 #include "camera.h"
 #include "../networking/networking.h"
+#include <JPEGDEC.h>
 
 /*****************************************************
  *  VARIABLES
@@ -43,13 +44,12 @@ void configure_camera()
     camera_config.pin_reset    = RESET_GPIO_NUM;
     camera_config.xclk_freq_hz = 20000000;
     camera_config.frame_size   = FRAMESIZE_QVGA;      // good frame size for streaming, SVGA/QVGA would be another choice
-    camera_config.pixel_format = PIXFORMAT_JPEG;      // good format for streaming, GRAYSCALE would be another choice
     camera_config.jpeg_quality = 20;                  // lower number -> higher quality
     camera_config.fb_count     = 1;                   // fb_count > 1 -> the driver works in continous mode
     camera_config.grab_mode    = CAMERA_GRAB_WHEN_EMPTY;
 }
 
-esp_err_t init_camera()
+esp_err_t init_camera(pixformat_t format)
 {
     // power up the camera if the power down line gpio pin is defined
     if (PWDN_GPIO_NUM != -1)
@@ -60,6 +60,7 @@ esp_err_t init_camera()
 
     setup_camera_flash_pwm();
     configure_camera();
+    camera_config.pixel_format = format;
     // initialize the camera and check for any errors during init
     esp_err_t err = esp_camera_init(&camera_config);
     if (err != ESP_OK)
@@ -72,7 +73,7 @@ esp_err_t init_camera()
     sensor_t *sensor = esp_camera_sensor_get();
     sensor->set_vflip(sensor, 1);
     sensor->set_hmirror(sensor, 1);
-    // sensor->set_brightness(sensor, 2);
+    sensor->set_brightness(sensor, 1);
 
     return ESP_OK;
 }
@@ -108,19 +109,18 @@ void toggle_camera_flash()
 }
 
 
-void toggle_grayscale()
+void toggle_grayscale(bool *stream_paused)
 {
-    grayscale_state = !grayscale_state;
-    sensor_t *sensor = esp_camera_sensor_get();
-    if (grayscale_state == true) {
-        sensor->set_pixformat(sensor, PIXFORMAT_GRAYSCALE);
-        delay(3000);
+    sensor_t *s = esp_camera_sensor_get();
+    if (!s) {
+        ESP_LOGE(TAG, "Camera sensor not found");
+        return;
     }
-    else
-    {
-        sensor->set_pixformat(sensor, PIXFORMAT_JPEG);
-        delay(3000);
-    }
+    esp_camera_deinit();
+    init_camera(PIXFORMAT_GRAYSCALE);
+    *stream_paused = true;
+    delay(5000);
+    *stream_paused = false;
 }
 
 

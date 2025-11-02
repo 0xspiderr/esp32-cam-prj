@@ -25,10 +25,10 @@ void setup()
     while (!Serial);
 
     // try to init camera
-    esp_err_t err = init_camera();
+    esp_err_t err = init_camera(PIXFORMAT_JPEG);
     while (err != ESP_OK)
     {
-        err = init_camera();
+        err = init_camera(PIXFORMAT_JPEG);
     }
 
     init_wifi();

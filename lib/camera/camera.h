@@ -7,6 +7,7 @@
 #include <esp_camera.h>
 #include <esp_err.h>
 #include <esp32-hal-gpio.h>
+#include "../../.pio/libdeps/esp32cam/ESP32QRCodeReader/src/quirc/quirc.h"
 
 
 /*****************************************************
@@ -44,9 +45,8 @@
  *****************************************************/
 void        configure_camera      (void);
 void        toggle_camera_flash   (void);
-void        toggle_grayscale      (void);
-esp_err_t   init_camera           (void);
-
+void        toggle_grayscale      (bool *);
+esp_err_t   init_camera           (pixformat_t);
 
 // internal functions used only in this unit
 static void setup_camera_flash_pwm(void);
