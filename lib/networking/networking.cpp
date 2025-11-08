@@ -197,7 +197,7 @@ static esp_err_t convert_jpeg_handler(httpd_req_t *req)
 {
     if (req->method == HTTP_POST)
     {
-        xTaskCreatePinnedToCore(capture_decode_and_quirc, "capture_decode_and_quirc", 20000, NULL, 2, &task, 1);
+        xTaskCreatePinnedToCore(capture_decode_and_quirc, "capture_decode_and_quirc", 20000, NULL, 2, &task, 0);
         httpd_resp_send(req, "converted", HTTPD_RESP_USE_STRLEN);
         return ESP_OK;
     }
