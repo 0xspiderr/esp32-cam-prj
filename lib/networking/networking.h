@@ -21,11 +21,10 @@ void             init_wifi     (void);
 void             init_server   (void);
 
 // internal functions used only in this unit
-static esp_err_t index_handler    (httpd_req_t *);
-static esp_err_t stream_handler   (httpd_req_t *);
-static esp_err_t flash_handler    (httpd_req_t *);
-static esp_err_t grayscale_handler(httpd_req_t *);
-static esp_err_t convert_jpeg_handler(httpd_req_t *);
+static esp_err_t index_handler   (httpd_req_t *);
+static esp_err_t stream_handler  (httpd_req_t *);
+static esp_err_t flash_handler   (httpd_req_t *);
+static esp_err_t scan_qr_handler (httpd_req_t *);
 
 
 /*****************************************************

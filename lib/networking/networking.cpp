@@ -16,8 +16,9 @@ const char        *STREAM_BOUNDARY     = "\r\n--" PART_BOUNDARY "\r\n";
 const char        *STREAM_PART         = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
 httpd_handle_t    camera_httpd         = NULL;
 httpd_handle_t    stream_httpd         = NULL;
-static bool stream_paused = false;
-static TaskHandle_t task = NULL;
+
+// FreeRTOS tasks
+static TaskHandle_t qr_scan_task = NULL;
 
 
 
@@ -59,6 +60,8 @@ void init_server()
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.stack_size = 8192;
     config.server_port = 80;
+    config.core_id = 0;
+
     httpd_uri_t index_uri =
     {
         .uri = "/",
@@ -83,19 +86,11 @@ void init_server()
         .user_ctx = NULL
     };
 
-    httpd_uri_t grayscale_uri =
-    {
-        .uri = "/grayscale",
-        .method = HTTP_POST,
-        .handler = grayscale_handler,
-        .user_ctx = NULL
-    };
-
-    httpd_uri_t convert_jpeg_uri =
+    httpd_uri_t scan_qr_uri =
     {
         .uri = "/convert-jpeg",
         .method = HTTP_POST,
-        .handler =  convert_jpeg_handler,
+        .handler =  scan_qr_handler,
         .user_ctx = NULL
     };
 
@@ -103,8 +98,7 @@ void init_server()
     {
         httpd_register_uri_handler(camera_httpd, &index_uri);
         httpd_register_uri_handler(camera_httpd, &flash_uri);
-        httpd_register_uri_handler(camera_httpd, &grayscale_uri);
-        httpd_register_uri_handler(camera_httpd, &convert_jpeg_uri);
+        httpd_register_uri_handler(camera_httpd, &scan_qr_uri);
     }
 
     config.server_port = 81;
@@ -141,7 +135,6 @@ static esp_err_t stream_handler(httpd_req_t *req)
             esp_camera_fb_return(fb);
             continue;
         }
-
         // send part header
         if (res == ESP_OK)
         {
@@ -154,13 +147,10 @@ static esp_err_t stream_handler(httpd_req_t *req)
         // send stream boundary
         if (res == ESP_OK)
             res = httpd_resp_send_chunk(req, STREAM_BOUNDARY, strlen(STREAM_BOUNDARY));
-
         esp_camera_fb_return(fb);
-
         if (res != ESP_OK)
             break;
     }
-
     return res;
 }
 
@@ -179,25 +169,17 @@ static esp_err_t flash_handler(httpd_req_t *req)
     return ESP_FAIL;
 }
 
-
-static esp_err_t grayscale_handler(httpd_req_t *req)
+static esp_err_t scan_qr_handler(httpd_req_t *req)
 {
     if (req->method == HTTP_POST)
     {
-        toggle_grayscale(&stream_paused);
-        httpd_resp_send(req, "toggled greyscale", HTTPD_RESP_USE_STRLEN);
-        return ESP_OK;
-    }
-
-    httpd_resp_send_404(req);
-    return ESP_FAIL;
-}
-
-static esp_err_t convert_jpeg_handler(httpd_req_t *req)
-{
-    if (req->method == HTTP_POST)
-    {
-        xTaskCreatePinnedToCore(capture_decode_and_quirc, "capture_decode_and_quirc", 20000, NULL, 2, &task, 0);
+        xTaskCreatePinnedToCore(scan_qr_code,
+            "scan_qr_code",
+            20000,
+            NULL,
+            2,
+            &qr_scan_task,
+            1);
         httpd_resp_send(req, "converted", HTTPD_RESP_USE_STRLEN);
         return ESP_OK;
     }

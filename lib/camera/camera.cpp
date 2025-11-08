@@ -43,7 +43,7 @@ void configure_camera()
     camera_config.pin_pwdn     = PWDN_GPIO_NUM;
     camera_config.pin_reset    = RESET_GPIO_NUM;
     camera_config.xclk_freq_hz = 20000000;
-    camera_config.frame_size   = FRAMESIZE_QVGA;      // good frame size for streaming, SVGA/QVGA would be another choice
+    camera_config.frame_size   = FRAMESIZE_VGA;      // good frame size for streaming, SVGA/QVGA would be another choice
     camera_config.jpeg_quality = 10;                  // lower number -> higher quality
     camera_config.fb_count     = 2;                   // fb_count > 1 -> the driver works in continous mode
     camera_config.grab_mode    = CAMERA_GRAB_WHEN_EMPTY;
@@ -131,13 +131,12 @@ void toggle_grayscale(bool *stream_paused)
 
 }
 
-void capture_decode_and_quirc(void *arg) {
+void scan_qr_code(void *arg) {
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb || fb->format != PIXFORMAT_JPEG) {
         Serial.println("Capture failed or format is not JPEG!");
         return;
     }
-
     size_t width = fb->width;
     size_t height = fb->height;
     size_t rgb565_size = width * height * 2;
@@ -147,7 +146,6 @@ void capture_decode_and_quirc(void *arg) {
         esp_camera_fb_return(fb);
         return;
     }
-
     // decode jpeg to rgb565
     bool decode_success = jpg2rgb565(
         (const uint8_t *)fb->buf,
@@ -156,13 +154,11 @@ void capture_decode_and_quirc(void *arg) {
         JPG_SCALE_NONE
     );
     esp_camera_fb_return(fb);
-
     if (!decode_success) {
         Serial.println("JPEG to RGB565 decoding FAILED!");
         free(rgb565_buffer);
         return;
     }
-
     // convert rgb565 to grayscale
     size_t gray_size = width * height;
     uint8_t *gray_buffer = (uint8_t *)heap_caps_malloc(gray_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
