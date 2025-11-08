@@ -44,9 +44,10 @@ void configure_camera()
     camera_config.pin_reset    = RESET_GPIO_NUM;
     camera_config.xclk_freq_hz = 20000000;
     camera_config.frame_size   = FRAMESIZE_QVGA;      // good frame size for streaming, SVGA/QVGA would be another choice
-    camera_config.jpeg_quality = 20;                  // lower number -> higher quality
+    camera_config.jpeg_quality = 10;                  // lower number -> higher quality
     camera_config.fb_count     = 1;                   // fb_count > 1 -> the driver works in continous mode
     camera_config.grab_mode    = CAMERA_GRAB_WHEN_EMPTY;
+    camera_config.fb_location  = CAMERA_FB_IN_PSRAM;
 }
 
 esp_err_t init_camera(pixformat_t format)
@@ -116,11 +117,120 @@ void toggle_grayscale(bool *stream_paused)
         ESP_LOGE(TAG, "Camera sensor not found");
         return;
     }
-    esp_camera_deinit();
-    init_camera(PIXFORMAT_GRAYSCALE);
+
     *stream_paused = true;
+
+    esp_camera_deinit();
+    if (s->pixformat == PIXFORMAT_JPEG)
+        init_camera(PIXFORMAT_GRAYSCALE);
+    else
+        init_camera(PIXFORMAT_JPEG);
+
     delay(5000);
     *stream_paused = false;
+
+}
+
+void capture_decode_and_quirc(void *arg) {
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb || fb->format != PIXFORMAT_JPEG) {
+        Serial.println("Capture failed or format is not JPEG!");
+        return;
+    }
+
+    size_t width = fb->width;
+    size_t height = fb->height;
+    size_t rgb565_size = width * height * 2;
+    uint8_t *rgb565_buffer = (uint8_t *)heap_caps_malloc(rgb565_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (!rgb565_buffer) {
+        Serial.println("PSRAM allocation failed for RGB565 buffer!");
+        esp_camera_fb_return(fb);
+        return;
+    }
+
+    // decode jpeg to rgb565
+    bool decode_success = jpg2rgb565(
+        (const uint8_t *)fb->buf,
+        fb->len,
+        rgb565_buffer,
+        JPG_SCALE_NONE
+    );
+    esp_camera_fb_return(fb);
+
+    if (!decode_success) {
+        Serial.println("JPEG to RGB565 decoding FAILED!");
+        free(rgb565_buffer);
+        return;
+    }
+
+    // convert rgb565 to grayscale
+    size_t gray_size = width * height;
+    uint8_t *gray_buffer = (uint8_t *)heap_caps_malloc(gray_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+
+    if (!gray_buffer) {
+        Serial.println("PSRAM allocation failed for Grayscale buffer!");
+        free(rgb565_buffer);
+        return;
+    }
+    for (size_t i = 0; i < gray_size; i++) {
+        uint16_t pixel = ((uint16_t *)rgb565_buffer)[i];
+
+        uint8_t R = (pixel >> 11) & 0x1F;
+        uint8_t G = (pixel >> 5) & 0x3F;
+        uint8_t B = pixel & 0x1F;
+
+        uint8_t r8 = R << 3;
+        uint8_t g8 = G << 2;
+        uint8_t b8 = B << 3;
+
+        uint8_t gray_value = (uint8_t)((30 * r8 + 59 * g8 + 11 * b8) / 100);
+        gray_buffer[i] = gray_value;
+    }
+
+    free(rgb565_buffer);
+
+    // decode qr code
+    struct quirc *q = quirc_new();
+    if (!q) {
+        Serial.println("Failed to allocate quirc object!");
+        free(gray_buffer);
+        return;
+    }
+
+    if (quirc_resize(q, width, height) < 0) {
+        Serial.println("Failed to resize quirc buffer!");
+        quirc_destroy(q);
+        free(gray_buffer);
+        return;
+    }
+    uint8_t *quirc_image = quirc_begin(q, NULL, NULL);
+    memcpy(quirc_image, gray_buffer, gray_size);
+    quirc_end(q);
+    free(gray_buffer);
+
+    int count = quirc_count(q);
+    Serial.printf("Found %d potential QR codes.\n", count);
+
+    for (int i = 0; i < count; i++) {
+        struct quirc_code code;
+        struct quirc_data data;
+
+        quirc_extract(q, i, &code);
+
+        quirc_decode_error_t err = quirc_decode(&code, &data);
+
+        if (err == 0) {
+            Serial.printf("  Version: %d\n", data.version);
+            Serial.printf("  Data Type: %d (0=Numeric, 1=Alphanumeric, 2=Byte, 3=Kanji)\n", data.data_type);
+            Serial.printf("  Payload (%u bytes): %s\n", data.payload_len, data.payload);
+        } else {
+            Serial.printf("QR Code decoding FAILED for code #%d. Error: %s\n", i + 1, quirc_strerror(err));
+        }
+    }
+    quirc_destroy(q);
+    Serial.println("Scan complete.");
+
+    vTaskDelete(NULL);
 }
 
 

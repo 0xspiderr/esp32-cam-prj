@@ -12,10 +12,21 @@
  *****************************************************/
 #define BAUD_RATE 115200
 
+/*****************************************************
+ *  VARIABLES
+ *****************************************************/
 
 /*****************************************************
  *  BUILTIN ESP32 FUNCTIONS
  *****************************************************/
+void test_task(void *arg) {
+    while (1) {
+        Serial.println("Hello World");
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+}
+
+
 void setup()
 {
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector
@@ -30,9 +41,9 @@ void setup()
     {
         err = init_camera(PIXFORMAT_JPEG);
     }
-
     init_wifi();
     init_server(); // if the connection to the wifi was successfuly established, initialize the server
+
 }
 
 void loop()

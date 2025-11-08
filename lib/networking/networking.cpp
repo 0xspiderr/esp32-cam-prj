@@ -17,6 +17,8 @@ const char        *STREAM_PART         = "Content-Type: image/jpeg\r\nContent-Le
 httpd_handle_t    camera_httpd         = NULL;
 httpd_handle_t    stream_httpd         = NULL;
 static bool stream_paused = false;
+static TaskHandle_t task = NULL;
+
 
 
 /*****************************************************
@@ -55,6 +57,7 @@ void init_wifi()
 void init_server()
 {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.stack_size = 8192;
     config.server_port = 80;
     httpd_uri_t index_uri =
     {
@@ -88,11 +91,20 @@ void init_server()
         .user_ctx = NULL
     };
 
+    httpd_uri_t convert_jpeg_uri =
+    {
+        .uri = "/convert-jpeg",
+        .method = HTTP_POST,
+        .handler =  convert_jpeg_handler,
+        .user_ctx = NULL
+    };
+
     if (httpd_start(&camera_httpd, &config) == ESP_OK)
     {
         httpd_register_uri_handler(camera_httpd, &index_uri);
         httpd_register_uri_handler(camera_httpd, &flash_uri);
         httpd_register_uri_handler(camera_httpd, &grayscale_uri);
+        httpd_register_uri_handler(camera_httpd, &convert_jpeg_uri);
     }
 
     config.server_port = 81;
@@ -122,15 +134,7 @@ static esp_err_t stream_handler(httpd_req_t *req)
 
     while (true)
     {
-        if (stream_paused) {
-            esp_camera_fb_return(fb);
-            Serial.println("Stream stopped");
-            delay(100);
-            continue;
-        }
-
         fb = esp_camera_fb_get();
-
         if (!fb)
         {
             ESP_LOGE(TAG, "camera photo capture failed");
@@ -138,49 +142,19 @@ static esp_err_t stream_handler(httpd_req_t *req)
             continue;
         }
 
-
-        uint8_t *jpg_buf = NULL;
-        size_t jpg_len = 0;
-        bool converted = false;
-        if (fb->format == PIXFORMAT_GRAYSCALE)
-        {
-            // Convert grayscale to JPEG
-            converted = fmt2jpg(fb->buf, fb->len, fb->width, fb->height, PIXFORMAT_GRAYSCALE, 80, &jpg_buf, &jpg_len);
-            if (!converted)
-            {
-                Serial.println("JPEG conversion failed");
-                esp_camera_fb_return(fb);
-                continue;
-            }
-        }
-        else if (fb->format == PIXFORMAT_JPEG)
-        {
-            jpg_buf = fb->buf;
-            jpg_len = fb->len;
-        }
-
-        // ESP_LOGI(TAG, "JPEG compression succeeded");
-        // Serial.println(jpg_buf_len);
-
         // send part header
         if (res == ESP_OK)
         {
-            ssize_t hlen = snprintf(part_buf, 64, STREAM_PART, jpg_len);
+            ssize_t hlen = snprintf(part_buf, 64, STREAM_PART, fb->len);
             res = httpd_resp_send_chunk(req, (const char*)part_buf, hlen);
         }
         // send frame buffer data
         if (res == ESP_OK)
-            res = httpd_resp_send_chunk(req, (const char *)jpg_buf, jpg_len);
+            res = httpd_resp_send_chunk(req, (const char *)fb->buf, fb->len);
         // send stream boundary
         if (res == ESP_OK)
             res = httpd_resp_send_chunk(req, STREAM_BOUNDARY, strlen(STREAM_BOUNDARY));
 
-
-        if (converted && jpg_buf)
-        {
-            free(jpg_buf);
-            jpg_buf = NULL;
-        }
         esp_camera_fb_return(fb);
 
         if (res != ESP_OK)
@@ -212,6 +186,19 @@ static esp_err_t grayscale_handler(httpd_req_t *req)
     {
         toggle_grayscale(&stream_paused);
         httpd_resp_send(req, "toggled greyscale", HTTPD_RESP_USE_STRLEN);
+        return ESP_OK;
+    }
+
+    httpd_resp_send_404(req);
+    return ESP_FAIL;
+}
+
+static esp_err_t convert_jpeg_handler(httpd_req_t *req)
+{
+    if (req->method == HTTP_POST)
+    {
+        xTaskCreatePinnedToCore(capture_decode_and_quirc, "capture_decode_and_quirc", 20000, NULL, 2, &task, 1);
+        httpd_resp_send(req, "converted", HTTPD_RESP_USE_STRLEN);
         return ESP_OK;
     }
 

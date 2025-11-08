@@ -25,6 +25,7 @@ static esp_err_t index_handler    (httpd_req_t *);
 static esp_err_t stream_handler   (httpd_req_t *);
 static esp_err_t flash_handler    (httpd_req_t *);
 static esp_err_t grayscale_handler(httpd_req_t *);
+static esp_err_t convert_jpeg_handler(httpd_req_t *);
 
 
 /*****************************************************
@@ -49,12 +50,15 @@ height:auto;
 <br>
 <button onclick="toggleFlash()">toggle flash</button>
 <button onclick="toggleGrayscale()">toggle grayscale</button>
+<button onclick="convertJpeg()">convert jpeg</button>
 <script>
 window.onload=document.getElementById("photo").src=window.location.href.slice(0,-1)+":81/stream";
 function toggleFlash(){
 fetch('/flash', {method:'POST'});}
 function toggleGrayscale(){
 fetch('/grayscale', {method:'POST'});}
+function convertJpeg(){
+fetch('/convert-jpeg', {method:'POST'});}
 </script>
 </body>
 </html>)rawliteral";

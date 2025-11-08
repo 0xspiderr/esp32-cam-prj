@@ -47,6 +47,8 @@ void        configure_camera      (void);
 void        toggle_camera_flash   (void);
 void        toggle_grayscale      (bool *);
 esp_err_t   init_camera           (pixformat_t);
+void capture_decode_and_quirc(void *);
+
 
 // internal functions used only in this unit
 static void setup_camera_flash_pwm(void);
