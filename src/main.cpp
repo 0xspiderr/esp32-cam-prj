@@ -41,9 +41,9 @@ void setup()
     {
         err = init_camera(PIXFORMAT_JPEG);
     }
+
     init_wifi();
     init_server(); // if the connection to the wifi was successfuly established, initialize the server
-
 }
 
 void loop()

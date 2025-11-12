@@ -21,7 +21,6 @@ httpd_handle_t    stream_httpd         = NULL;
 static TaskHandle_t qr_scan_task = NULL;
 
 
-
 /*****************************************************
  *  DEFINITIONS
  *****************************************************/
@@ -106,8 +105,6 @@ void init_server()
     if (httpd_start(&stream_httpd, &config) == ESP_OK)
         httpd_register_uri_handler(stream_httpd, &stream_uri);
 }
-
-
 /* Endpoint handlers ******************************************************/
 static esp_err_t index_handler(httpd_req_t *req)
 {
@@ -173,18 +170,33 @@ static esp_err_t scan_qr_handler(httpd_req_t *req)
 {
     if (req->method == HTTP_POST)
     {
-        xTaskCreatePinnedToCore(scan_qr_code,
+        BaseType_t result = xTaskCreatePinnedToCore(
+            scan_qr_code,
             "scan_qr_code",
-            20000,
+            16384,      // 16kb stack for qr scan task
             NULL,
-            2,
+            5,
             &qr_scan_task,
             1);
+
+        if (result != pdPASS)
+        {
+            ESP_LOGE(TAG, "Failed to create scan qr task");
+            qr_scan_task = NULL;
+            vTaskDelete(qr_scan_task);
+            return ESP_FAIL;
+        }
+
         httpd_resp_send(req, "converted", HTTPD_RESP_USE_STRLEN);
         return ESP_OK;
     }
 
     httpd_resp_send_404(req);
     return ESP_FAIL;
+}
+
+void set_qr_scan_task_handle(TaskHandle_t handle)
+{
+    qr_scan_task = handle;
 }
 /**************************************************************************/

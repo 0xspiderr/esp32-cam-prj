@@ -17,8 +17,9 @@
 /*****************************************************
  *  PROTOTYPES
  *****************************************************/
-void             init_wifi     (void);
-void             init_server   (void);
+void init_wifi              (void);
+void init_server            (void);
+void set_qr_scan_task_handle(TaskHandle_t handle);
 
 // internal functions used only in this unit
 static esp_err_t index_handler   (httpd_req_t *);

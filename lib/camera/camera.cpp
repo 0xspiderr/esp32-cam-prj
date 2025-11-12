@@ -119,35 +119,56 @@ static bool is_duty_range_ok(int duty_cycle)
 /* Camera qr decode functions *****************************/
 void scan_qr_code(void *arg) {
     camera_fb_t *fb = esp_camera_fb_get();
+    uint8_t *rgb565_buffer = NULL;
+    uint8_t *gray_buffer = NULL;
+    size_t width = 0;
+    size_t height = 0;
+    size_t gray_size = 0;
+
     if (!fb || fb->format != PIXFORMAT_JPEG) {
         Serial.println("Capture failed or format is not JPEG!");
-        return;
+        if (fb)
+            esp_camera_fb_return(fb);
+        goto memory_cleanup;
     }
 
     // convert jpeg to rgb565
-    size_t width = fb->width;
-    size_t height = fb->height;
-    uint8_t *rgb565_buffer = convert_jpeg_to_rgb565(width, height, fb);
+    width = fb->width;
+    height = fb->height;
+    rgb565_buffer = convert_jpeg_to_rgb565(width, height, fb);
+    fb = NULL;
     if (!rgb565_buffer)
     {
         ESP_LOGE(TAG, "Error returning buffer from jpeg to rgb565");
-        return;
+        goto memory_cleanup;
     }
 
     // convert rgb565 to grayscale
-    size_t gray_size = width * height;
-    uint8_t *gray_buffer = convert_rgb565_to_grayscale(gray_size, rgb565_buffer);
+    gray_size = width * height;
+    gray_buffer = convert_rgb565_to_grayscale(gray_size, rgb565_buffer);
+    rgb565_buffer = NULL;
     if (!gray_buffer)
     {
         ESP_LOGE(TAG, "Error returning buffer from rgb565 to grayscale");
-        return;
+        goto memory_cleanup;
     }
-    free(rgb565_buffer);
 
     // decode qr code
     decode_qr_from_grayscale(width, height, gray_buffer, gray_size);
+    gray_buffer = NULL;
 
-    vTaskDelete(NULL);
+    memory_cleanup:
+        // cleanup non freed memory
+        if (fb)
+            esp_camera_fb_return(fb);
+        if (rgb565_buffer)
+            free(rgb565_buffer);
+        if (gray_buffer)
+            free(gray_buffer);
+        // cleanup tasks
+        set_qr_scan_task_handle(NULL);
+        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelete(NULL);
 }
 
 static uint8_t *convert_jpeg_to_rgb565(size_t width, size_t height, camera_fb_t *fb)
@@ -169,6 +190,7 @@ static uint8_t *convert_jpeg_to_rgb565(size_t width, size_t height, camera_fb_t 
         rgb565_buffer,
         JPG_SCALE_NONE
     );
+    esp_camera_fb_return(fb);
 
     if (!decode_success) {
         Serial.println("JPEG to RGB565 decoding FAILED!");
@@ -176,7 +198,6 @@ static uint8_t *convert_jpeg_to_rgb565(size_t width, size_t height, camera_fb_t 
         return NULL;
     }
 
-    esp_camera_fb_return(fb);
     return rgb565_buffer;
 }
 
@@ -187,7 +208,6 @@ static uint8_t *convert_rgb565_to_grayscale(size_t gray_size, uint8_t *rgb565_bu
     if (!gray_buffer)
     {
         Serial.println("PSRAM allocation failed for Grayscale buffer!");
-        free(rgb565_buffer);
         return NULL;
     }
 
@@ -205,6 +225,7 @@ static uint8_t *convert_rgb565_to_grayscale(size_t gray_size, uint8_t *rgb565_bu
         uint8_t gray_value = (uint8_t)((30 * r8 + 59 * g8 + 11 * b8) / 100);
         gray_buffer[i] = gray_value;
     }
+    free(rgb565_buffer);
 
     return gray_buffer;
 }
@@ -232,7 +253,8 @@ static void decode_qr_from_grayscale(size_t width, size_t height, uint8_t *gray_
     int count = quirc_count(q);
     Serial.printf("Found %d potential QR codes.\n", count);
 
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++)
+    {
         struct quirc_code code;
         struct quirc_data data;
 
@@ -248,6 +270,7 @@ static void decode_qr_from_grayscale(size_t width, size_t height, uint8_t *gray_
             Serial.printf("QR Code decoding FAILED for code #%d. Error: %s\n", i + 1, quirc_strerror(err));
         }
     }
+
     quirc_destroy(q);
     Serial.println("Scan complete.");
 }
