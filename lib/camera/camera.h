@@ -43,16 +43,18 @@
 /*****************************************************
  *  PROTOTYPES
  *****************************************************/
-void        configure_camera      (void);
-void        toggle_camera_flash   (void);
-void        toggle_grayscale      (bool *);
-esp_err_t   init_camera           (pixformat_t);
-void        scan_qr_code          (void *);
+void        configure_camera    (void);
+void        toggle_camera_flash (void);
+esp_err_t   init_camera         (pixformat_t);
+void        scan_qr_code        (void *);
 
 
 // internal functions used only in this unit
-static void setup_camera_flash_pwm(void);
-static void set_flash_brightness  (int);
-static bool is_duty_range_ok      (int);
+static void     setup_camera_flash_pwm     (void);
+static void     set_flash_brightness       (int);
+static bool     is_duty_range_ok           (int);
+static uint8_t *convert_jpeg_to_rgb565     (size_t, size_t, camera_fb_t *);
+static uint8_t *convert_rgb565_to_grayscale(size_t, uint8_t *);
+static void     decode_qr_from_grayscale   (size_t, size_t, uint8_t *, size_t);
 
 #endif //ESP32_CAM_PRJ_CAMERA_H

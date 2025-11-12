@@ -22,6 +22,7 @@ bool      grayscale_state = false;
 /*****************************************************
  *  DEFINITIONS
  *****************************************************/
+/* Camera init functions *****************************/
 void configure_camera()
 {
     camera_config.ledc_channel = LEDC_CHANNEL_0;
@@ -110,64 +111,86 @@ void toggle_camera_flash()
 }
 
 
-void toggle_grayscale(bool *stream_paused)
+static bool is_duty_range_ok(int duty_cycle)
 {
-    sensor_t *s = esp_camera_sensor_get();
-    if (!s) {
-        ESP_LOGE(TAG, "Camera sensor not found");
-        return;
-    }
-
-    *stream_paused = true;
-
-    esp_camera_deinit();
-    if (s->pixformat == PIXFORMAT_JPEG)
-        init_camera(PIXFORMAT_GRAYSCALE);
-    else
-        init_camera(PIXFORMAT_JPEG);
-
-    delay(5000);
-    *stream_paused = false;
-
+    return duty_cycle >= LOWER_DUTY_LIMIT && duty_cycle <= UPPER_DUTY_LIMIT;
 }
 
+/* Camera qr decode functions *****************************/
 void scan_qr_code(void *arg) {
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb || fb->format != PIXFORMAT_JPEG) {
         Serial.println("Capture failed or format is not JPEG!");
         return;
     }
+
+    // convert jpeg to rgb565
     size_t width = fb->width;
     size_t height = fb->height;
-    size_t rgb565_size = width * height * 2;
-    uint8_t *rgb565_buffer = (uint8_t *)heap_caps_malloc(rgb565_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    if (!rgb565_buffer) {
-        Serial.println("PSRAM allocation failed for RGB565 buffer!");
-        esp_camera_fb_return(fb);
+    uint8_t *rgb565_buffer = convert_jpeg_to_rgb565(width, height, fb);
+    if (!rgb565_buffer)
+    {
+        ESP_LOGE(TAG, "Error returning buffer from jpeg to rgb565");
         return;
     }
+
+    // convert rgb565 to grayscale
+    size_t gray_size = width * height;
+    uint8_t *gray_buffer = convert_rgb565_to_grayscale(gray_size, rgb565_buffer);
+    if (!gray_buffer)
+    {
+        ESP_LOGE(TAG, "Error returning buffer from rgb565 to grayscale");
+        return;
+    }
+    free(rgb565_buffer);
+
+    // decode qr code
+    decode_qr_from_grayscale(width, height, gray_buffer, gray_size);
+
+    vTaskDelete(NULL);
+}
+
+static uint8_t *convert_jpeg_to_rgb565(size_t width, size_t height, camera_fb_t *fb)
+{
+    size_t rgb565_size = width * height * 2;
+    uint8_t *rgb565_buffer = (uint8_t *)heap_caps_malloc(rgb565_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+
+    if (!rgb565_buffer)
+    {
+        Serial.println("PSRAM allocation failed for RGB565 buffer!");
+        esp_camera_fb_return(fb);
+        return NULL;
+    }
+
     // decode jpeg to rgb565
     bool decode_success = jpg2rgb565(
-        (const uint8_t *)fb->buf,
+        fb->buf,
         fb->len,
         rgb565_buffer,
         JPG_SCALE_NONE
     );
-    esp_camera_fb_return(fb);
+
     if (!decode_success) {
         Serial.println("JPEG to RGB565 decoding FAILED!");
         free(rgb565_buffer);
-        return;
+        return NULL;
     }
-    // convert rgb565 to grayscale
-    size_t gray_size = width * height;
+
+    esp_camera_fb_return(fb);
+    return rgb565_buffer;
+}
+
+static uint8_t *convert_rgb565_to_grayscale(size_t gray_size, uint8_t *rgb565_buffer)
+{
     uint8_t *gray_buffer = (uint8_t *)heap_caps_malloc(gray_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
 
-    if (!gray_buffer) {
+    if (!gray_buffer)
+    {
         Serial.println("PSRAM allocation failed for Grayscale buffer!");
         free(rgb565_buffer);
-        return;
+        return NULL;
     }
+
     for (size_t i = 0; i < gray_size; i++) {
         uint16_t pixel = ((uint16_t *)rgb565_buffer)[i];
 
@@ -183,9 +206,11 @@ void scan_qr_code(void *arg) {
         gray_buffer[i] = gray_value;
     }
 
-    free(rgb565_buffer);
+    return gray_buffer;
+}
 
-    // decode qr code
+static void decode_qr_from_grayscale(size_t width, size_t height, uint8_t *gray_buffer, size_t gray_size)
+{
     struct quirc *q = quirc_new();
     if (!q) {
         Serial.println("Failed to allocate quirc object!");
@@ -225,13 +250,5 @@ void scan_qr_code(void *arg) {
     }
     quirc_destroy(q);
     Serial.println("Scan complete.");
-
-    vTaskDelete(NULL);
-}
-
-
-static bool is_duty_range_ok(int duty_cycle)
-{
-    return duty_cycle >= LOWER_DUTY_LIMIT && duty_cycle <= UPPER_DUTY_LIMIT;
 }
 /******************************************************/
