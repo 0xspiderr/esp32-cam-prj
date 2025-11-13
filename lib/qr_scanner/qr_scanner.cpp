@@ -161,13 +161,13 @@ static void decode_qr_from_grayscale(size_t width, size_t height, uint8_t *gray_
 {
     struct quirc *q = quirc_new();
     if (!q) {
-        Serial.println("Failed to allocate quirc object!");
+        ESP_LOGE(TAG, "Failed to allocate quirc object!");
         free(gray_buffer);
         return;
     }
-    ESP_LOGI(TAG, "image w:%u h:%u", width, height);
+
     if (quirc_resize(q, width, height) < 0) {
-        Serial.println("Failed to resize quirc buffer!");
+        ESP_LOGE(TAG, "Failed to resize quirc buffer!");
         quirc_destroy(q);
         free(gray_buffer);
         return;
@@ -179,7 +179,7 @@ static void decode_qr_from_grayscale(size_t width, size_t height, uint8_t *gray_
     free(gray_buffer);
 
     int count = quirc_count(q);
-    Serial.printf("Found %d potential QR codes.\n", count);
+    ESP_LOGI(TAG, "Found %d potential QR codes.\n", count);
 
     for (int i = 0; i < count; i++)
     {
@@ -190,15 +190,16 @@ static void decode_qr_from_grayscale(size_t width, size_t height, uint8_t *gray_
 
         quirc_decode_error_t err = quirc_decode(&code, &data);
 
-        if (err == 0) {
-            Serial.printf("  Version: %d\n", data.version);
-            Serial.printf("  Data Type: %d (0=Numeric, 1=Alphanumeric, 2=Byte, 3=Kanji)\n", data.data_type);
-            Serial.printf("  Payload (%u bytes): %s\n", data.payload_len, data.payload);
+        if (err == 0)
+        {
+            ESP_LOGI(TAG, "  Version: %d\n", data.version);
+            ESP_LOGI(TAG, "  Data Type: %d (0=Numeric, 1=Alphanumeric, 2=Byte, 3=Kanji)\n", data.data_type);
+            ESP_LOGI(TAG, "  Payload (%u bytes): %s\n", data.payload_len, data.payload);
         } else {
-            Serial.printf("QR Code decoding FAILED for code #%d. Error: %s\n", i + 1, quirc_strerror(err));
+            ESP_LOGI(TAG, "QR Code decoding FAILED for code #%d. Error: %s\n", i + 1, quirc_strerror(err));
         }
     }
 
     quirc_destroy(q);
-    Serial.println("Scan complete.");
+    ESP_LOGI(TAG, "Scan complete.");
 }
