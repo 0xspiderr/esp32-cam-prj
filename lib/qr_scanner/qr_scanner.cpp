@@ -41,6 +41,9 @@ void trigger_qr_scan() {
 }
 
 void scan_qr_code(void *arg) {
+    // initially suspend this task after initializing it
+    vTaskSuspend(NULL);
+
     for (;;)
     {
         camera_fb_t *fb = esp_camera_fb_get();
@@ -86,12 +89,12 @@ void scan_qr_code(void *arg) {
             // cleanup non freed memory
             if (fb)
                 esp_camera_fb_return(fb);
-        if (rgb565_buffer)
-            free(rgb565_buffer);
-        if (gray_buffer)
-            free(gray_buffer);
-        ESP_LOGI(TAG, "QR decoding finished");
-        vTaskSuspend(NULL);
+            if (rgb565_buffer)
+                free(rgb565_buffer);
+            if (gray_buffer)
+                free(gray_buffer);
+            ESP_LOGI(TAG, "QR decoding finished");
+            vTaskSuspend(NULL);
     }
 }
 
@@ -162,7 +165,7 @@ static void decode_qr_from_grayscale(size_t width, size_t height, uint8_t *gray_
         free(gray_buffer);
         return;
     }
-
+    ESP_LOGI(TAG, "image w:%u h:%u", width, height);
     if (quirc_resize(q, width, height) < 0) {
         Serial.println("Failed to resize quirc buffer!");
         quirc_destroy(q);
@@ -170,6 +173,7 @@ static void decode_qr_from_grayscale(size_t width, size_t height, uint8_t *gray_
         return;
     }
     uint8_t *quirc_image = quirc_begin(q, NULL, NULL);
+
     memcpy(quirc_image, gray_buffer, gray_size);
     quirc_end(q);
     free(gray_buffer);
