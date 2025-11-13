@@ -17,10 +17,6 @@ const char        *STREAM_PART         = "Content-Type: image/jpeg\r\nContent-Le
 httpd_handle_t    camera_httpd         = NULL;
 httpd_handle_t    stream_httpd         = NULL;
 
-// FreeRTOS tasks
-static TaskHandle_t qr_scan_task = NULL;
-
-
 /*****************************************************
  *  DEFINITIONS
  *****************************************************/
@@ -50,7 +46,6 @@ void init_wifi()
     Serial.print(WiFi.RSSI());
     Serial.println("");
 }
-
 
 // starts the server and registers URIs
 // TODO: move uri setup to a different function
@@ -166,25 +161,17 @@ static esp_err_t flash_handler(httpd_req_t *req)
     return ESP_FAIL;
 }
 
+
 static esp_err_t scan_qr_handler(httpd_req_t *req)
 {
     if (req->method == HTTP_POST)
     {
-        BaseType_t result = xTaskCreatePinnedToCore(
-            scan_qr_code,
-            "scan_qr_code",
-            16384,      // 16kb stack for qr scan task
-            NULL,
-            5,
-            &qr_scan_task,
-            1);
+        // Trigger the scan
+        trigger_qr_scan();
 
-        if (result != pdPASS)
-        {
-            ESP_LOGE(TAG, "Failed to create scan qr task");
-            qr_scan_task = NULL;
-            vTaskDelete(qr_scan_task);
-            return ESP_FAIL;
+        // Or access directly
+        if (qr_scan_task != NULL) {
+            vTaskResume(qr_scan_task);
         }
 
         httpd_resp_send(req, "converted", HTTPD_RESP_USE_STRLEN);
@@ -193,10 +180,5 @@ static esp_err_t scan_qr_handler(httpd_req_t *req)
 
     httpd_resp_send_404(req);
     return ESP_FAIL;
-}
-
-void set_qr_scan_task_handle(TaskHandle_t handle)
-{
-    qr_scan_task = handle;
 }
 /**************************************************************************/

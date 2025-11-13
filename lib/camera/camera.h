@@ -7,8 +7,6 @@
 #include <esp_camera.h>
 #include <esp_err.h>
 #include <esp32-hal-gpio.h>
-#include "../../.pio/libdeps/esp32cam/ESP32QRCodeReader/src/quirc/quirc.h"
-
 
 /*****************************************************
  *  DEFINES
@@ -53,8 +51,5 @@ void        scan_qr_code        (void *);
 static void     setup_camera_flash_pwm     (void);
 static void     set_flash_brightness       (int);
 static bool     is_duty_range_ok           (int);
-static uint8_t *convert_jpeg_to_rgb565     (size_t, size_t, camera_fb_t *);
-static uint8_t *convert_rgb565_to_grayscale(size_t, uint8_t *);
-static void     decode_qr_from_grayscale   (size_t, size_t, uint8_t *, size_t);
 
 #endif //ESP32_CAM_PRJ_CAMERA_H

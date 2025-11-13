@@ -6,6 +6,7 @@
 #include <WebServer.h>
 #include "../../include/wifi_credentials.h"
 #include "esp_http_server.h"
+#include "../qr_scanner/qr_scanner.h"
 
 
 /*****************************************************
@@ -19,7 +20,6 @@
  *****************************************************/
 void init_wifi              (void);
 void init_server            (void);
-void set_qr_scan_task_handle(TaskHandle_t handle);
 
 // internal functions used only in this unit
 static esp_err_t index_handler   (httpd_req_t *);
