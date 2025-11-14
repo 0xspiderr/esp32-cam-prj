@@ -6,6 +6,7 @@
 #include <WebServer.h>
 #include "../../include/wifi_credentials.h"
 #include "esp_http_server.h"
+#include <esp_now.h>
 #include "../qr_scanner/qr_scanner.h"
 
 
@@ -18,14 +19,16 @@
 /*****************************************************
  *  PROTOTYPES
  *****************************************************/
-void init_wifi              (void);
-void init_server            (void);
+void init_wifi    (void);
+void init_server  (void);
+void init_esp_now (void);
 
 // internal functions used only in this unit
 static esp_err_t index_handler   (httpd_req_t *);
 static esp_err_t stream_handler  (httpd_req_t *);
 static esp_err_t flash_handler   (httpd_req_t *);
 static esp_err_t scan_qr_handler (httpd_req_t *);
+static void      on_data_sent    (const uint8_t *, esp_now_send_status_t);
 
 
 /*****************************************************

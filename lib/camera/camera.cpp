@@ -45,7 +45,7 @@ void configure_camera()
     camera_config.pin_reset    = RESET_GPIO_NUM;
     camera_config.xclk_freq_hz = 20000000;
     camera_config.frame_size   = FRAMESIZE_QVGA;      // good frame size for streaming, SVGA/QVGA/VGA would be another choice
-    camera_config.jpeg_quality = 10;                   // lower number -> higher quality
+    camera_config.jpeg_quality = 8;                   // lower number -> higher quality
     camera_config.fb_count     = 2;                   // fb_count > 1 -> the driver works in continous mode
     camera_config.grab_mode    = CAMERA_GRAB_WHEN_EMPTY;
     camera_config.fb_location  = CAMERA_FB_IN_PSRAM;

@@ -16,6 +16,9 @@ const char        *STREAM_BOUNDARY     = "\r\n--" PART_BOUNDARY "\r\n";
 const char        *STREAM_PART         = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
 httpd_handle_t    camera_httpd         = NULL;
 httpd_handle_t    stream_httpd         = NULL;
+// esp now variables
+static esp_now_peer_info_t peer_info;
+static uint8_t broadcast_addr[] = {};
 
 /*****************************************************
  *  DEFINITIONS
@@ -100,6 +103,45 @@ void init_server()
     if (httpd_start(&stream_httpd, &config) == ESP_OK)
         httpd_register_uri_handler(stream_httpd, &stream_uri);
 }
+
+
+/* ESP-NOW functions ******************************************************/
+void init_esp_now()
+{
+    esp_err_t err;
+    if (esp_now_init() != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Couldn't initialize esp now!");
+        ESP.restart();
+    }
+    // register esp now send data callback
+    err = esp_now_register_send_cb(esp_now_send_cb_t(on_data_sent));
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Error registering send callback!");
+        ESP.restart();
+    }
+
+    memcpy(peer_info.peer_addr, broadcast_addr, 6);
+    peer_info.channel = 0;
+    peer_info.encrypt = false;
+
+    if (esp_now_add_peer(&peer_info) == ESP_OK)
+    {
+        ESP_LOGE(TAG, "Couldn't add esp now peer!");
+        ESP.restart();
+    }
+}
+
+static void on_data_sent(const uint8_t *mac_addr, esp_now_send_status_t status)
+{
+    ESP_LOGI(TAG, "esp-now data sent");
+    if (status == ESP_NOW_SEND_SUCCESS)
+        ESP_LOGI(TAG, "data sent successfully");
+    else
+        ESP_LOGE(TAG, "data not sent");
+}
+
 /* Endpoint handlers ******************************************************/
 static esp_err_t index_handler(httpd_req_t *req)
 {

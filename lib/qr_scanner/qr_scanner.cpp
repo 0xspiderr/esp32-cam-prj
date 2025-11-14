@@ -15,7 +15,7 @@ void init_qr_scanner() {
         BaseType_t result = xTaskCreatePinnedToCore(
             scan_qr_code,
             "scan_qr_code",
-            25000,
+            20000,
             NULL,
             5,
             &qr_scan_task,
