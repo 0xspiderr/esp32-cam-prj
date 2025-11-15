@@ -1,15 +1,20 @@
+/*****************************************************
+*  INCLUDES
+ *****************************************************/
 #include "qr_scanner.h"
+#include <string.h>
 
-#include <HardwareSerial.h>
-
-
-
+/*****************************************************
+ *  VARIABLES
+ *****************************************************/
 static const char* TAG = "qr_scanner";
-
 // FreeRTOS tasks
 TaskHandle_t qr_scan_task = NULL;
 
 
+/*****************************************************
+ *  DEFINITIONS
+ *****************************************************/
 void init_qr_scanner() {
     if (qr_scan_task == NULL) {
         BaseType_t result = xTaskCreatePinnedToCore(
@@ -105,7 +110,7 @@ static uint8_t *convert_jpeg_to_rgb565(size_t width, size_t height, camera_fb_t 
 
     if (!rgb565_buffer)
     {
-        Serial.println("PSRAM allocation failed for RGB565 buffer!");
+        ESP_LOGE(TAG, "PSRAM allocation failed for RGB565 buffer!");
         esp_camera_fb_return(fb);
         return NULL;
     }
@@ -120,7 +125,7 @@ static uint8_t *convert_jpeg_to_rgb565(size_t width, size_t height, camera_fb_t 
     esp_camera_fb_return(fb);
 
     if (!decode_success) {
-        Serial.println("JPEG to RGB565 decoding FAILED!");
+        ESP_LOGE(TAG, "JPEG to RGB565 decoding FAILED!");
         free(rgb565_buffer);
         return NULL;
     }
@@ -134,7 +139,7 @@ static uint8_t *convert_rgb565_to_grayscale(size_t gray_size, uint8_t *rgb565_bu
 
     if (!gray_buffer)
     {
-        Serial.println("PSRAM allocation failed for Grayscale buffer!");
+        ESP_LOGE(TAG, "PSRAM allocation failed for Grayscale buffer!");
         return NULL;
     }
 

@@ -1,15 +1,24 @@
 #ifndef QR_SCANNER_H
 #define QR_SCANNER_H
 
+/*****************************************************
+ *  INCLUDES
+ *****************************************************/
 #include <esp32-hal-log.h>
 #include <esp_camera.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include "../../.pio/libdeps/esp32cam/ESP32QRCodeReader/src/quirc/quirc.h"
 
-
+/*****************************************************
+ *  VARIABLES
+ *****************************************************/
 extern TaskHandle_t qr_scan_task;
 
+
+/*****************************************************
+ *  PROTOTYPES
+ *****************************************************/
 void            init_qr_scanner            (void);
 void            trigger_qr_scan            (void);
 void            scan_qr_code               (void *);

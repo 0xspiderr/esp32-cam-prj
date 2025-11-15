@@ -18,7 +18,8 @@ httpd_handle_t    camera_httpd         = NULL;
 httpd_handle_t    stream_httpd         = NULL;
 // esp now variables
 static esp_now_peer_info_t peer_info;
-static uint8_t broadcast_addr[] = {};
+static uint8_t MAC_addr[] = {};
+esp_now_command cmd_data;
 
 /*****************************************************
  *  DEFINITIONS
@@ -85,9 +86,17 @@ void init_server()
 
     httpd_uri_t scan_qr_uri =
     {
-        .uri = "/convert-jpeg",
+        .uri = "/convert-qr",
         .method = HTTP_POST,
         .handler =  scan_qr_handler,
+        .user_ctx = NULL
+    };
+
+    httpd_uri_t command_uri =
+    {
+        .uri = "/command",
+        .method = HTTP_GET,
+        .handler = movement_cmd_handler,
         .user_ctx = NULL
     };
 
@@ -96,6 +105,7 @@ void init_server()
         httpd_register_uri_handler(camera_httpd, &index_uri);
         httpd_register_uri_handler(camera_httpd, &flash_uri);
         httpd_register_uri_handler(camera_httpd, &scan_qr_uri);
+        httpd_register_uri_handler(camera_httpd, &command_uri);
     }
 
     config.server_port = 81;
@@ -122,15 +132,18 @@ void init_esp_now()
         ESP.restart();
     }
 
-    memcpy(peer_info.peer_addr, broadcast_addr, 6);
+    memcpy(peer_info.peer_addr, MAC_addr, 6);
     peer_info.channel = 0;
     peer_info.encrypt = false;
 
-    if (esp_now_add_peer(&peer_info) == ESP_OK)
+    // wait until the control esp32 board is powered on and setup
+    while (esp_now_add_peer(&peer_info) != ESP_OK)
     {
         ESP_LOGE(TAG, "Couldn't add esp now peer!");
-        ESP.restart();
+        delay(100);
     }
+
+    ESP_LOGI(TAG, "ESP-NOW initialization successful");
 }
 
 static void on_data_sent(const uint8_t *mac_addr, esp_now_send_status_t status)
@@ -141,6 +154,22 @@ static void on_data_sent(const uint8_t *mac_addr, esp_now_send_status_t status)
     else
         ESP_LOGE(TAG, "data not sent");
 }
+
+static void send_move_command(const char *cmd)
+{
+    strcpy(cmd_data.cmd, cmd);
+    esp_err_t res = esp_now_send(MAC_addr, (uint8_t *) &cmd_data, sizeof(cmd_data));
+    if (res != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Couldn't send command");
+    }
+    else {
+        ESP_LOGI(TAG, "Command sent successfully:%s", cmd);
+    }
+}
+
+
+/**************************************************************************/
 
 /* Endpoint handlers ******************************************************/
 static esp_err_t index_handler(httpd_req_t *req)
@@ -222,5 +251,41 @@ static esp_err_t scan_qr_handler(httpd_req_t *req)
 
     httpd_resp_send_404(req);
     return ESP_FAIL;
+}
+
+
+static esp_err_t movement_cmd_handler(httpd_req_t *req)
+{
+    esp_err_t err = ESP_FAIL;
+    char buf[64] = {};
+    char cmd[16] = {};
+    size_t buf_len = httpd_req_get_url_query_len(req) + 1;
+    if (buf_len < 2)
+    {
+        httpd_resp_send_500(req);
+        return err;
+    }
+
+    err = httpd_req_get_url_query_str(req, buf, buf_len);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to get URL query string %s", err);
+        httpd_resp_send_500(req);
+        return err;
+    }
+
+    err = httpd_query_key_value(buf, "cmd", cmd, sizeof(cmd));
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to get command string %s", err);
+        httpd_resp_send_500(req);
+        return err;
+    }
+
+    ESP_LOGI(TAG, "received a new command=%s", cmd);
+    send_move_command(cmd);
+    httpd_resp_send(req, "OK", HTTPD_RESP_USE_STRLEN);
+
+    return ESP_OK;
 }
 /**************************************************************************/
