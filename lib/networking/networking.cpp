@@ -3,6 +3,7 @@
  *****************************************************/
 #include "networking.h"
 #include "../camera/camera.h"
+#include <WiFi.h>
 
 
 /*****************************************************
@@ -18,7 +19,7 @@ httpd_handle_t    camera_httpd         = NULL;
 httpd_handle_t    stream_httpd         = NULL;
 // esp now variables
 static esp_now_peer_info_t peer_info;
-static uint8_t MAC_addr[] = {};
+static uint8_t MAC_addr[] = {0x8C, 0x4F, 0x00, 0x30, 0x5B, 0x1C};
 esp_now_command cmd_data;
 
 /*****************************************************
@@ -29,26 +30,20 @@ void init_wifi()
     size_t no_connection_cnt = 0;
     WiFi.mode(WIFI_MODE_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    Serial.println("Attempting to connect to WiFi");
+    ESP_LOGI(TAG, "Attempting to connect to WiFi");
     // try wifi connection, restart esp after 15 seconds if not succesfull and try again.
     while (WiFi.status() != WL_CONNECTED)
     {
-        Serial.print(".");
         delay(100);
         if (++no_connection_cnt > 150)
         {
-            Serial.println("Connection failed, restarting ESP-32");
+            ESP_LOGW(TAG, "Connection failed, restarting ESP-32");
             ESP.restart();
         }
     }
 
-    Serial.println("");
-    Serial.print("Connected to WiFi: http://");
-    Serial.print(WiFi.localIP());
-    Serial.println("");
-    Serial.println("RSSI(signal strength):");   // numbers closer to 0 mean better signal strength
-    Serial.print(WiFi.RSSI());
-    Serial.println("");
+    ESP_LOGI(TAG, "Connected to WiFi: http://%s", WiFi.localIP().toString().c_str());
+    ESP_LOGI(TAG, "RSSI(signal strength):%s", String(WiFi.RSSI()).c_str());   // numbers closer to 0 mean better signal strength
 }
 
 // starts the server and registers URIs
@@ -136,7 +131,7 @@ void init_esp_now()
     peer_info.channel = 0;
     peer_info.encrypt = false;
 
-    // wait until the control esp32 board is powered on and setup
+    // try to add esp now peer
     while (esp_now_add_peer(&peer_info) != ESP_OK)
     {
         ESP_LOGE(TAG, "Couldn't add esp now peer!");
@@ -148,7 +143,6 @@ void init_esp_now()
 
 static void on_data_sent(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
-    ESP_LOGI(TAG, "esp-now data sent");
     if (status == ESP_NOW_SEND_SUCCESS)
         ESP_LOGI(TAG, "data sent successfully");
     else
