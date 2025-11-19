@@ -79,6 +79,11 @@ height:auto;
         onmouseup="sendCmd('SAM')">arm motor up</button>
 <button onmousedown="sendCmd('AMD')"
         onmouseup="sendCmd('SAM')">arm motor down</button>
+<button onmousedown="sendCmd('ASO')"
+        onmouseup="sendCmd('ASS')">arm servo open</button>
+<button onmousedown="sendCmd('ASC')"
+        onmouseup="sendCmd('ASS')">arm servo close</button>
+<button onclick="sendCmd('ASS')">arm servo stop</button>
 <button onclick="sendCmd('SAM')">arm motor stop</button>
 <button onclick="sendCmd('S')"> emergency stop </button>
 <script>
