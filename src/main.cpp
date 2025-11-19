@@ -2,6 +2,8 @@
  *  INCLUDES
  *****************************************************/
 #include <HardwareSerial.h>
+#include <WiFi.h>
+
 #include "camera.h"
 #include "networking.h"
 #include "soc/rtc_cntl_reg.h" // for disabling brownout detector

@@ -44,6 +44,7 @@ void init_wifi()
 
     ESP_LOGI(TAG, "Connected to WiFi: http://%s", WiFi.localIP().toString().c_str());
     ESP_LOGI(TAG, "RSSI(signal strength):%s", String(WiFi.RSSI()).c_str());   // numbers closer to 0 mean better signal strength
+    ESP_LOGI(TAG, "WiFi channel:%s", String(WiFi.channel()).c_str());
 }
 
 // starts the server and registers URIs

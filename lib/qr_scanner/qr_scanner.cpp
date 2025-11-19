@@ -200,6 +200,9 @@ static void decode_qr_from_grayscale(size_t width, size_t height, uint8_t *gray_
             ESP_LOGI(TAG, "  Version: %d\n", data.version);
             ESP_LOGI(TAG, "  Data Type: %d (0=Numeric, 1=Alphanumeric, 2=Byte, 3=Kanji)\n", data.data_type);
             ESP_LOGI(TAG, "  Payload (%u bytes): %s\n", data.payload_len, data.payload);
+            // create string from payload and process the url
+            String url = String((char*)data.payload, data.payload_len);
+            process_url_data(url);
         } else {
             ESP_LOGI(TAG, "QR Code decoding FAILED for code #%d. Error: %s\n", i + 1, quirc_strerror(err));
         }
@@ -207,4 +210,20 @@ static void decode_qr_from_grayscale(size_t width, size_t height, uint8_t *gray_
 
     quirc_destroy(q);
     ESP_LOGI(TAG, "Scan complete.");
+}
+
+static void process_url_data(String url)
+{
+    // read humidity and temperature
+    // float temp = dht.readTemperature();
+    // float humidity = dht.readHumidity();
+
+    // test values
+    url.replace("YOUR_TEAM", "TEST_TEAM_NAME");
+    url.replace("FILL_HERE", String(12.5));
+    url.replace("FILL_THERE", String(80));
+
+    ESP_LOGI(TAG, "Modified url data: %s", url.c_str());
+
+    // send http request
 }
