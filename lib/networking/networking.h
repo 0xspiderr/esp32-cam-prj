@@ -7,8 +7,6 @@
 #include "esp_http_server.h"
 #include <esp_now.h>
 #include <pgmspace.h>
-#include <WString.h>
-
 #include "../qr_scanner/qr_scanner.h"
 
 
@@ -23,7 +21,7 @@
  *****************************************************/
 typedef struct esp_now_command
 {
-    char cmd[4];
+    char cmd[8];
 } esp_now_command;
 
 
@@ -77,6 +75,11 @@ height:auto;
         onmouseup="sendCmd('S')">turn left</button>
 <button onmousedown="sendCmd('R')"
         onmouseup="sendCmd('S')">turn right</button>
+<button onmousedown="sendCmd('AMU')"
+        onmouseup="sendCmd('SAM')">arm motor up</button>
+<button onmousedown="sendCmd('AMD')"
+        onmouseup="sendCmd('SAM')">arm motor down</button>
+<button onclick="sendCmd('SAM')">arm motor stop</button>
 <button onclick="sendCmd('S')"> emergency stop </button>
 <script>
 window.onload=document.getElementById("photo").src=window.location.href.slice(0,-1)+":81/stream";

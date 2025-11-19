@@ -2,7 +2,6 @@
 *  INCLUDES
  *****************************************************/
 #include "qr_scanner.h"
-#include <string.h>
 
 /*****************************************************
  *  VARIABLES
@@ -10,6 +9,8 @@
 static const char* TAG = "qr_scanner";
 // FreeRTOS tasks
 TaskHandle_t qr_scan_task = NULL;
+
+static String http_response = "";
 
 
 /*****************************************************
@@ -226,4 +227,99 @@ static void process_url_data(String url)
     ESP_LOGI(TAG, "Modified url data: %s", url.c_str());
 
     // send http request
+    send_http_req(url);
+}
+
+static void send_http_req(String url)
+{
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        ESP_LOGE(TAG, "WiFi is not connected");
+        return;
+    }
+    http_response = "";
+
+    // http client config
+    esp_http_client_config_t config = {};
+    config.url = url.c_str();
+    config.event_handler = http_event_handler;
+    config.timeout_ms = 10000;
+    config.method = HTTP_METHOD_GET;
+
+    // create a new http client
+    esp_http_client_handle_t client = esp_http_client_init(&config);
+    esp_err_t err = esp_http_client_perform(client);
+
+    if (err == ESP_OK)
+    {
+        int status_code = esp_http_client_get_status_code(client);
+        ESP_LOGI(TAG, "HTTP response code: %d", status_code);
+        ESP_LOGI(TAG, "HTTP response: %s", http_response.c_str());
+        // parse_json_response(http_response);
+    }
+    else
+    {
+        ESP_LOGE(TAG, "HTTP request failed: %s", esp_err_to_name(err));
+    }
+
+    esp_http_client_cleanup(client);
+}
+
+esp_err_t http_event_handler(esp_http_client_event_t *event)
+{
+    switch(event->event_id)
+    {
+        case HTTP_EVENT_ON_DATA:
+            if (event->data_len > 0) {
+                http_response += String((char*)event->data).substring(0, event->data_len);
+            }
+            break;
+        case HTTP_EVENT_ON_FINISH:
+            ESP_LOGI(TAG, "http event finished");
+            break;
+        case HTTP_EVENT_ERROR:
+            ESP_LOGE(TAG, "http event error");
+            break;
+        default:
+            break;
+    }
+    return ESP_OK;
+}
+
+void parse_json_response(String json)
+{
+    // Create JSON document (size 256 bytes should be enough)
+    JsonDocument doc;
+
+    // Deserialize the JSON
+    DeserializationError error = deserializeJson(doc, json);
+
+    if (error) {
+        Serial.print("JSON parsing failed: ");
+        Serial.println(error.c_str());
+        return;
+    }
+
+    // Extract fields from JSON
+    const char* team        = doc["team"];
+    const char* checkpoint  = doc["checkpoint"];
+    const char* secret      = doc["secret"];
+    const char* temperature = doc["temperature"];
+    const char* humidity    = doc["humidity"];
+    const char* status      = doc["status"];
+
+    ESP_LOGI(TAG, "Team: %s", team);
+    ESP_LOGI(TAG, "Checkpoint: %s", checkpoint);
+    ESP_LOGI(TAG, "Temperature: %s Celsius", temperature);
+    ESP_LOGI(TAG, "Humidity: %s%%", humidity);
+
+    if (status)
+    {
+        if (strcmp(status, "OK") == 0)
+            ESP_LOGI(TAG, "Data uploaded successfully to the database");
+        else if (strcmp(status, "INVALID_SECRET") == 0)
+            ESP_LOGE(TAG, "Request took too long (>1 minute)");
+    }
+    else
+        ESP_LOGE(TAG, "No status field in response");
 }
