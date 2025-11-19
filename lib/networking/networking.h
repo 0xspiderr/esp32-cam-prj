@@ -75,6 +75,7 @@ height:auto;
         onmouseup="sendCmd('S')">turn left</button>
 <button onmousedown="sendCmd('R')"
         onmouseup="sendCmd('S')">turn right</button>
+<button onclick="sendCmd('S')"> emergency stop </button>
 <script>
 window.onload=document.getElementById("photo").src=window.location.href.slice(0,-1)+":81/stream";
 function toggleFlash(){

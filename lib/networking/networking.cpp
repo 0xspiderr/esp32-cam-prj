@@ -19,7 +19,7 @@ httpd_handle_t    camera_httpd         = NULL;
 httpd_handle_t    stream_httpd         = NULL;
 // esp now variables
 static esp_now_peer_info_t peer_info;
-static uint8_t MAC_addr[] = {0x8C, 0x4F, 0x00, 0x30, 0x5B, 0x1C};
+static uint8_t MAC_addr[] = {0x8C, 0x4F, 0x00, 0x30, 0x5B, 0x1C}; // used broadcast address because unicast address didnt work
 esp_now_command cmd_data;
 
 /*****************************************************
@@ -252,7 +252,7 @@ static esp_err_t movement_cmd_handler(httpd_req_t *req)
 {
     esp_err_t err = ESP_FAIL;
     char buf[64] = {};
-    char cmd[16] = {};
+    char cmd[4] = {};
     size_t buf_len = httpd_req_get_url_query_len(req) + 1;
     if (buf_len < 2)
     {
