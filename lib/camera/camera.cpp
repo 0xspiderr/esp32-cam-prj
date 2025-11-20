@@ -16,7 +16,6 @@ const int frequency       = 5000;
 const int led_channel     = 0; // if using pwm with the camera and esp32 at the same time, use another channel
 const int cam_resolution  = 8;
 bool      flash_state     = false;
-bool      grayscale_state = false;
 
 
 /*****************************************************
@@ -76,7 +75,7 @@ esp_err_t init_camera(pixformat_t format)
     sensor->set_vflip(sensor, 1);
     sensor->set_hmirror(sensor, 1);
     // sensor->set_brightness(sensor, 2);
-    sensor->set_contrast(sensor, 2);
+    // sensor->set_contrast(sensor, 2);
 
 
     return ESP_OK;
@@ -92,7 +91,7 @@ static void setup_camera_flash_pwm()
 }
 
 
-static void set_flash_brightness(int duty_cycle)
+void set_flash_brightness(int duty_cycle)
 {
     if (is_duty_range_ok(duty_cycle) == false)
         return;

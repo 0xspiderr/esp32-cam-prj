@@ -45,11 +45,11 @@ void        configure_camera    (void);
 void        toggle_camera_flash (void);
 esp_err_t   init_camera         (pixformat_t);
 void        scan_qr_code        (void *);
+void        set_flash_brightness(int);
 
 
 // internal functions used only in this unit
 static void     setup_camera_flash_pwm     (void);
-static void     set_flash_brightness       (int);
 static bool     is_duty_range_ok           (int);
 
 #endif //ESP32_CAM_PRJ_CAMERA_H

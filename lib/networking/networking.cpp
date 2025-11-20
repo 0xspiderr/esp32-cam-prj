@@ -96,12 +96,21 @@ void init_server()
         .user_ctx = NULL
     };
 
+    httpd_uri_t flash_intensity_uri =
+    {
+        .uri = "/flash-intensity",
+        .method = HTTP_GET,
+        .handler = flash_intensity_handler,
+        .user_ctx = NULL
+    };
+
     if (httpd_start(&camera_httpd, &config) == ESP_OK)
     {
         httpd_register_uri_handler(camera_httpd, &index_uri);
         httpd_register_uri_handler(camera_httpd, &flash_uri);
         httpd_register_uri_handler(camera_httpd, &scan_qr_uri);
         httpd_register_uri_handler(camera_httpd, &command_uri);
+        httpd_register_uri_handler(camera_httpd, &flash_intensity_uri);
     }
 
     config.server_port = 81;
@@ -281,6 +290,58 @@ static esp_err_t movement_cmd_handler(httpd_req_t *req)
     send_move_command(cmd);
     httpd_resp_send(req, "OK", HTTPD_RESP_USE_STRLEN);
 
+    return ESP_OK;
+}
+
+static esp_err_t flash_intensity_handler(httpd_req_t *req)
+{
+    esp_err_t err = ESP_FAIL;
+    char buf[64] = {};
+    char value_str[8] = {};
+    size_t buf_len = httpd_req_get_url_query_len(req) + 1;
+
+    // Check if query string exists
+    if (buf_len < 2)
+    {
+        ESP_LOGE(TAG, "No query string provided");
+        httpd_resp_send_500(req);
+        return err;
+    }
+
+    err = httpd_req_get_url_query_str(req, buf, buf_len);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to get URL query string");
+        httpd_resp_send_500(req);
+        return err;
+    }
+
+    // Extract the "value" parameter from the query string
+    err = httpd_query_key_value(buf, "value", value_str, sizeof(value_str));
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to get intensity value from query");
+        httpd_resp_send_500(req);
+        return err;
+    }
+
+    // Convert string to integer
+    int intensity = atoi(value_str);
+
+    // Validate range
+    if (intensity < 0 || intensity > 255)
+    {
+        ESP_LOGE(TAG, "Invalid intensity value: %d (must be 0-255)", intensity);
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    ESP_LOGI(TAG, "Setting flash intensity to: %d", intensity);
+
+    // Call the camera function to actually set the intensity
+    set_flash_brightness(intensity);
+
+    httpd_resp_send(req, "OK", HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 /**************************************************************************/
