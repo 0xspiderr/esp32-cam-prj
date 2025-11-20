@@ -67,6 +67,7 @@ height:auto;
 <br>
 <button onclick="toggleFlash()">toggle flash</button>
 <button onclick="convertJpeg()">scan qr code</button>
+
 <button onmousedown="sendCmd('F')"
         onmouseup="sendCmd('S')">forward</button>
 <button onmousedown="sendCmd('B')"
@@ -75,15 +76,18 @@ height:auto;
         onmouseup="sendCmd('S')">turn left</button>
 <button onmousedown="sendCmd('R')"
         onmouseup="sendCmd('S')">turn right</button>
+
 <button onmousedown="sendCmd('AMU')"
         onmouseup="sendCmd('SAM')">arm motor up</button>
 <button onmousedown="sendCmd('AMD')"
         onmouseup="sendCmd('SAM')">arm motor down</button>
-<button onmousedown="sendCmd('ASO')"
-        onmouseup="sendCmd('ASS')">arm servo open</button>
-<button onmousedown="sendCmd('ASC')"
-        onmouseup="sendCmd('ASS')">arm servo close</button>
-<button onclick="sendCmd('ASS')">arm servo stop</button>
+
+<button onclick="sendCmd('ASO')">arm servo open</button>
+<button onclick="sendCmd('ASC')">arm servo close</button>
+
+<button onclick="sendCmd('CSR')">cam servo rotate right</button>
+<button onclick="sendCmd('CSL')">cam servo rotate left</button>
+
 <button onclick="sendCmd('SAM')">arm motor stop</button>
 <button onclick="sendCmd('S')"> emergency stop </button>
 <script>
