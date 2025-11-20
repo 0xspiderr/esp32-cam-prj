@@ -130,8 +130,9 @@ button {
     <button onmousedown="sendCmd('F')" onmouseup="sendCmd('S')">forward</button>
   </div>
   <div class="row">
-    <button onmousedown="sendCmd('L')" onmouseup="sendCmd('S')">turn left</button>
-    <button onmousedown="sendCmd('R')" onmouseup="sendCmd('S')">turn right</button>
+    <button onclick="sendCmd('L')">turn left</button>
+    <button onclick="sendCmd('NS')">turn forward</button>
+    <button onclick="sendCmd('R')">turn right</button>
   </div>
   <div class="row">
     <button onmousedown="sendCmd('B')" onmouseup="sendCmd('S')">back</button>
