@@ -22,6 +22,7 @@ static esp_now_peer_info_t peer_info;
 static uint8_t MAC_addr[] = {0x8C, 0x4F, 0x00, 0x30, 0x5B, 0x1C}; // used broadcast address because unicast address didnt work
 esp_now_command cmd_data;
 
+
 /*****************************************************
  *  DEFINITIONS
  *****************************************************/
@@ -165,7 +166,7 @@ static void send_move_command(const char *cmd)
     esp_err_t res = esp_now_send(MAC_addr, (uint8_t *) &cmd_data, sizeof(cmd_data));
     if (res != ESP_OK)
     {
-        ESP_LOGE(TAG, "Couldn't send command");
+        ESP_LOGE(TAG, "Couldn't send command, result: %s", String(res).c_str());
     }
     else {
         ESP_LOGI(TAG, "Command sent successfully:%s", cmd);
