@@ -6,6 +6,7 @@
 
 #include "camera.h"
 #include "networking.h"
+#include "../lib/sensors/sensors.h"
 #include "soc/rtc_cntl_reg.h" // for disabling brownout detector
 
 
@@ -39,6 +40,7 @@ void setup()
     init_esp_now();
     init_server(); // if the connection to the wifi was successfuly established, initialize the server
     init_qr_scanner();
+    dht11.begin();
 }
 
 void loop()

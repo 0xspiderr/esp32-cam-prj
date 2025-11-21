@@ -141,17 +141,17 @@ button {
 
 
 <div class="grup">
-  <button onmousedown="sendCmd('AMU')" onmouseup="sendCmd('SAM')">arm motor up</button>
-  <button onmousedown="sendCmd('AMD')" onmouseup="sendCmd('SAM')">arm motor down</button>
+    <button onmousedown="sendCmd('AMU')" onmouseup="sendCmd('SAM')">arm motor up</button>
+    <button onmousedown="sendCmd('AMD')" onmouseup="sendCmd('SAM')">arm motor down</button>
 
-<button onclick="sendCmd('ASO')">arm servo open</button>
-<button onclick="sendCmd('ASC')">arm servo close</button>
+    <button onclick="sendCmd('ASO')">arm servo open</button>
+    <button onclick="sendCmd('ASC')">arm servo close</button>
 
-<button onclick="sendCmd('CSR')">cam servo rotate right</button>
-<button onclick="sendCmd('CSL')">cam servo rotate left</button>
+    <button onclick="sendCmd('CSR')">cam servo rotate right</button>
+    <button onclick="sendCmd('CSL')">cam servo rotate left</button>
 
-<button onclick="sendCmd('SAM')">arm motor stop</button>
-<button class="stop-btn" onclick="sendCmd('S')"> emergency stop </button>
+    <button onclick="sendCmd('SAM')">arm motor stop</button>
+    <button class="stop-btn" onclick="sendCmd('S')"> emergency stop </button>
 </div>
 <script>
 var flashIntensity = 255;

@@ -1,7 +1,8 @@
 /*****************************************************
-*  INCLUDES
+ *  INCLUDES
  *****************************************************/
 #include "qr_scanner.h"
+#include "../sensors/sensors.h"
 
 /*****************************************************
  *  VARIABLES
@@ -216,13 +217,13 @@ static void decode_qr_from_grayscale(size_t width, size_t height, uint8_t *gray_
 static void process_url_data(String url)
 {
     // read humidity and temperature
-    // float temp = dht.readTemperature();
-    // float humidity = dht.readHumidity();
+    float temp = dht11.readTemperature();
+    float humidity = dht11.readHumidity();
 
     // test values
     url.replace("YOUR_TEAM", "TEST_TEAM_NAME");
-    url.replace("FILL_HERE", String(12.5));
-    url.replace("FILL_THERE", String(80));
+    url.replace("FILL_HERE", String(temp, 1));
+    url.replace("FILL_THERE", String(humidity));
 
     ESP_LOGI(TAG, "Modified url data: %s", url.c_str());
 
