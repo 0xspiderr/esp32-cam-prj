@@ -23,7 +23,7 @@ void init_qr_scanner() {
         BaseType_t result = xTaskCreatePinnedToCore(
             scan_qr_code,
             "scan_qr_code",
-            30000,
+            32000,
             NULL,
             5,
             &qr_scan_task,
@@ -225,13 +225,13 @@ static void process_url_data(String url)
     if (isnan(temp) || isnan(humidity))
     {
         temp = 12.5f;
-        humidity = 12.0f;
+        humidity = 40.0f;
     }
 
     // test values
     url.replace("YOUR_TEAM", "BYTES");
     url.replace("FILL_HERE", String(temp, 1));
-    url.replace("FILL_THERE", String(humidity));
+    url.replace("FILL_THERE", String(int(humidity)));
 
     ESP_LOGI(TAG, "Modified url data: %s", url.c_str());
 
