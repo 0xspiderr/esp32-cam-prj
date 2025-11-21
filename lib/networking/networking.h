@@ -15,6 +15,7 @@
  *****************************************************/
 #define PART_BOUNDARY       "123456789000000000000987654321"
 #define CAMERA_STREAM_DELAY 20
+#define MAX_WIFI_RETRIES    5
 
 /*****************************************************
  *  STRUCTURES
@@ -41,9 +42,11 @@ static esp_err_t flash_handler          (httpd_req_t *);
 static esp_err_t scan_qr_handler        (httpd_req_t *);
 static esp_err_t movement_cmd_handler   (httpd_req_t *);
 static esp_err_t flash_intensity_handler(httpd_req_t *);
+static esp_err_t status_get_handler     (httpd_req_t *);
 // esp-now
 static void      on_data_sent        (const uint8_t *, esp_now_send_status_t);
 static void      send_move_command   (const char *);
+static void      wifi_event          (WiFiEvent_t , WiFiEventInfo_t );
 
 
 /*****************************************************
@@ -117,6 +120,11 @@ button {
 <img src="" id="photo">
 <br>
 <div class="grup">
+
+<div id="statusDisplay" style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">
+        awaiting qr code http request to database response..
+</div>
+<button type="button" onclick="getLatestStatus()">check upload status</button>
 <button onclick="toggleFlash()">toggle flash</button>
 <button onclick="convertJpeg()">scan qr code</button>
 <div class="slider-container">
@@ -175,6 +183,36 @@ function convertJpeg(){
 fetch('/convert-qr', {method:'POST'});}
 function sendCmd(cmd){
 fetch('/command?cmd='+cmd);}
+function getLatestStatus() {
+    const display = document.getElementById("statusDisplay");
+    display.innerText = "Checking Status...";
+    display.style.color = "orange"; // Indicate fetching
+
+    fetch('/status') // The ESP32 must expose the last_upload_status via /status
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+        .then(statusText => {
+            display.innerText = "Last Upload Status: " + statusText;
+
+            // Apply color based on status
+            if (statusText.includes("OK")) {
+                display.style.color = "green";
+            } else if (statusText.includes("ERROR") || statusText.includes("INVALID") || statusText.includes("No status")) {
+                display.style.color = "red";
+            } else {
+                display.style.color = "black";
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching status:', error);
+            display.innerText = "Status Error: Failed to fetch";
+            display.style.color = "red";
+        });
+}
 </script>
 </body>
 </html>)rawliteral";

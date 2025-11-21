@@ -5,6 +5,8 @@
  *  INCLUDES
  *****************************************************/
 #include <WiFi.h>
+#include <../../HTTPClient/src/HTTPClient.h>
+#include <../../WiFiClientSecure/src/WiFiClientSecure.h>
 #include <ArduinoJson.h>
 #include <esp_http_client.h>
 #include <esp32-hal-log.h>
@@ -18,6 +20,7 @@
  *  VARIABLES
  *****************************************************/
 extern TaskHandle_t qr_scan_task;
+extern String last_upload_status;
 
 
 /*****************************************************

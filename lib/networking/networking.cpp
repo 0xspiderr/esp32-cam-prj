@@ -21,6 +21,7 @@ httpd_handle_t    stream_httpd         = NULL;
 static esp_now_peer_info_t peer_info;
 static uint8_t MAC_addr[] = {0x8C, 0x4F, 0x00, 0x30, 0x5B, 0x1C}; // used broadcast address because unicast address didnt work
 esp_now_command cmd_data;
+static int wifi_retry_count = 0;
 
 
 /*****************************************************
@@ -29,6 +30,7 @@ esp_now_command cmd_data;
 void init_wifi()
 {
     size_t no_connection_cnt = 0;
+    WiFi.onEvent(wifi_event);
     WiFi.mode(WIFI_MODE_STA);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     ESP_LOGI(TAG, "Attempting to connect to WiFi");
@@ -46,6 +48,38 @@ void init_wifi()
     ESP_LOGI(TAG, "Connected to WiFi: http://%s", WiFi.localIP().toString().c_str());
     ESP_LOGI(TAG, "RSSI(signal strength):%s", String(WiFi.RSSI()).c_str());   // numbers closer to 0 mean better signal strength
     ESP_LOGI(TAG, "WiFi channel:%s", String(WiFi.channel()).c_str());
+}
+
+static void wifi_event(WiFiEvent_t event, WiFiEventInfo_t info)
+{
+    switch (event)
+    {
+        case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+            ESP_LOGI(TAG, "WiFi Connected & Got IP! Resetting retry counter.");
+            wifi_retry_count = 0;
+            break;
+
+        case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+            ESP_LOGW(TAG, "WiFi Disconnected.");
+            wifi_retry_count++;
+
+            if (wifi_retry_count > MAX_WIFI_RETRIES)
+            {
+                ESP_LOGE(TAG, "WiFi Connection failed %d times. Restarting ESP32...", MAX_WIFI_RETRIES);
+                delay(1000);
+                ESP.restart();
+            }
+            else
+            {
+                ESP_LOGW(TAG, "Retrying WiFi connection... (%d/%d)", wifi_retry_count, MAX_WIFI_RETRIES);
+                // WiFi.reconnect() is usually sufficient here, or you can call WiFi.begin() again
+                WiFi.reconnect();
+            }
+            break;
+
+        default:
+            break;
+    }
 }
 
 // starts the server and registers URIs
@@ -105,6 +139,13 @@ void init_server()
         .user_ctx = NULL
     };
 
+    httpd_uri_t status_uri = {
+        .uri      = "/status",
+        .method   = HTTP_GET,
+        .handler  = status_get_handler,
+        .user_ctx = NULL // No user context needed here
+    };
+
     if (httpd_start(&camera_httpd, &config) == ESP_OK)
     {
         httpd_register_uri_handler(camera_httpd, &index_uri);
@@ -112,6 +153,7 @@ void init_server()
         httpd_register_uri_handler(camera_httpd, &scan_qr_uri);
         httpd_register_uri_handler(camera_httpd, &command_uri);
         httpd_register_uri_handler(camera_httpd, &flash_intensity_uri);
+        httpd_register_uri_handler(camera_httpd, &status_uri);
     }
 
     config.server_port = 81;
@@ -344,5 +386,16 @@ static esp_err_t flash_intensity_handler(httpd_req_t *req)
 
     httpd_resp_send(req, "OK", HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
+}
+
+static esp_err_t status_get_handler(httpd_req_t *req)
+{
+    const char* resp_str = last_upload_status.c_str();
+    size_t resp_len = last_upload_status.length();
+
+    // set the Content Type header
+    httpd_resp_set_type(req, "text/plain");
+
+    return httpd_resp_send(req, resp_str, resp_len);
 }
 /**************************************************************************/

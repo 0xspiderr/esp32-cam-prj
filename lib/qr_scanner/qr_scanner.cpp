@@ -12,6 +12,7 @@ static const char* TAG = "qr_scanner";
 TaskHandle_t qr_scan_task = NULL;
 
 static String http_response = "";
+String last_upload_status = "awaiting data..";
 
 
 /*****************************************************
@@ -22,7 +23,7 @@ void init_qr_scanner() {
         BaseType_t result = xTaskCreatePinnedToCore(
             scan_qr_code,
             "scan_qr_code",
-            20000,
+            30000,
             NULL,
             5,
             &qr_scan_task,
@@ -220,8 +221,15 @@ static void process_url_data(String url)
     float temp = dht11.readTemperature();
     float humidity = dht11.readHumidity();
 
+    // mock data until i connect dht sensor to the cam
+    if (isnan(temp) || isnan(humidity))
+    {
+        temp = 12.5f;
+        humidity = 12.0f;
+    }
+
     // test values
-    url.replace("YOUR_TEAM", "TEST_TEAM_NAME");
+    url.replace("YOUR_TEAM", "BYTES");
     url.replace("FILL_HERE", String(temp, 1));
     url.replace("FILL_THERE", String(humidity));
 
@@ -238,32 +246,26 @@ static void send_http_req(String url)
         ESP_LOGE(TAG, "WiFi is not connected");
         return;
     }
-    http_response = "";
 
-    // http client config
-    esp_http_client_config_t config = {};
-    config.url = url.c_str();
-    config.event_handler = http_event_handler;
-    config.timeout_ms = 10000;
-    config.method = HTTP_METHOD_GET;
+    WiFiClientSecure *client = new WiFiClientSecure;
+    // i dont have the certificate :^(
+    client->setInsecure();
+    HTTPClient http;
+    http.begin(*client, url);
 
-    // create a new http client
-    esp_http_client_handle_t client = esp_http_client_init(&config);
-    esp_err_t err = esp_http_client_perform(client);
-
-    if (err == ESP_OK)
+    int httpResponseCode = http.GET();
+    if (httpResponseCode > 0)
     {
-        int status_code = esp_http_client_get_status_code(client);
-        ESP_LOGI(TAG, "HTTP response code: %d", status_code);
-        ESP_LOGI(TAG, "HTTP response: %s", http_response.c_str());
-        // parse_json_response(http_response);
+        // HTTP header has been send and server response header has been handled
+        ESP_LOGI(TAG, "HTTP response code: %d", httpResponseCode);
+        String response = http.getString();
+        parse_json_response(response);
+        ESP_LOGI(TAG, "HTTP response: %s", response.c_str());
     }
     else
-    {
-        ESP_LOGE(TAG, "HTTP request failed: %s", esp_err_to_name(err));
-    }
-
-    esp_http_client_cleanup(client);
+        ESP_LOGE(TAG, "HTTP request failed: %s", http.errorToString(httpResponseCode).c_str());
+    http.end();
+    delete client;
 }
 
 esp_err_t http_event_handler(esp_http_client_event_t *event)
@@ -317,9 +319,20 @@ void parse_json_response(String json)
     if (status)
     {
         if (strcmp(status, "OK") == 0)
+        {
             ESP_LOGI(TAG, "Data uploaded successfully to the database");
+            last_upload_status = "OK: Data uploaded";
+        }
         else if (strcmp(status, "INVALID_SECRET") == 0)
+        {
             ESP_LOGE(TAG, "Request took too long (>1 minute)");
+            last_upload_status = "ERR: Response took too long";
+        }
+        else
+        {
+            ESP_LOGE(TAG, "Unknown error");
+            last_upload_status = "ERR: Unknown";
+        }
     }
     else
         ESP_LOGE(TAG, "No status field in response");
