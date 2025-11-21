@@ -12,7 +12,6 @@ static const char* TAG = "qr_scanner";
 TaskHandle_t qr_scan_task = NULL;
 
 static String http_response = "";
-String last_upload_status = "awaiting data..";
 
 
 /*****************************************************
@@ -321,17 +320,17 @@ void parse_json_response(String json)
         if (strcmp(status, "OK") == 0)
         {
             ESP_LOGI(TAG, "Data uploaded successfully to the database");
-            last_upload_status = "OK: Data uploaded";
+            last_upload_status = "Data successfully uploaded";
         }
         else if (strcmp(status, "INVALID_SECRET") == 0)
         {
             ESP_LOGE(TAG, "Request took too long (>1 minute)");
-            last_upload_status = "ERR: Response took too long";
+            last_upload_status = "Request took too long";
         }
         else
         {
             ESP_LOGE(TAG, "Unknown error");
-            last_upload_status = "ERR: Unknown";
+            last_upload_status = "Unknown error";
         }
     }
     else

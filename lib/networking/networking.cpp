@@ -22,6 +22,7 @@ static esp_now_peer_info_t peer_info;
 static uint8_t MAC_addr[] = {0x8C, 0x4F, 0x00, 0x30, 0x5B, 0x1C}; // used broadcast address because unicast address didnt work
 esp_now_command cmd_data;
 static int wifi_retry_count = 0;
+String last_upload_status = "No last upload";
 
 
 /*****************************************************
@@ -139,11 +140,12 @@ void init_server()
         .user_ctx = NULL
     };
 
-    httpd_uri_t status_uri = {
-        .uri      = "/status",
-        .method   = HTTP_GET,
-        .handler  = status_get_handler,
-        .user_ctx = NULL // No user context needed here
+    httpd_uri_t status_uri =
+    {
+        .uri = "/status",
+        .method = HTTP_GET,
+        .handler = status_get_handler,
+        .user_ctx = NULL
     };
 
     if (httpd_start(&camera_httpd, &config) == ESP_OK)
@@ -391,11 +393,7 @@ static esp_err_t flash_intensity_handler(httpd_req_t *req)
 static esp_err_t status_get_handler(httpd_req_t *req)
 {
     const char* resp_str = last_upload_status.c_str();
-    size_t resp_len = last_upload_status.length();
-
-    // set the Content Type header
     httpd_resp_set_type(req, "text/plain");
-
-    return httpd_resp_send(req, resp_str, resp_len);
+    return httpd_resp_send(req, resp_str, strlen(resp_str));
 }
 /**************************************************************************/

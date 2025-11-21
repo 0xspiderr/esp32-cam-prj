@@ -15,12 +15,12 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include "../../.pio/libdeps/esp32cam/ESP32QRCodeReader/src/quirc/quirc.h"
+#include <../networking/networking.h>
 
 /*****************************************************
  *  VARIABLES
  *****************************************************/
 extern TaskHandle_t qr_scan_task;
-extern String last_upload_status;
 
 
 /*****************************************************

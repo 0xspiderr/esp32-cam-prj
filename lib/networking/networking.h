@@ -27,6 +27,11 @@ typedef struct esp_now_command
 
 
 /*****************************************************
+ *  VARIABLES
+ *****************************************************/
+extern String last_upload_status;
+
+/*****************************************************
  *  PROTOTYPES
  *****************************************************/
 // init functions
@@ -163,55 +168,56 @@ button {
 </div>
 <script>
 var flashIntensity = 255;
+var statusInterval;
+
 window.onload = function() {
   document.getElementById("photo").src = window.location.href.slice(0,-1) + ":81/stream";
-
-  // Event listener pentru slider
   var slider = document.getElementById("flashSlider");
   var output = document.getElementById("intensityValue");
-
   slider.oninput = function() {
     flashIntensity = this.value;
     output.innerHTML = this.value;
-    // Trimite noua valoare catre ESP32
     fetch('/flash-intensity?value=' + flashIntensity);
   }
+  // Check status immediately on load
+  getLatestStatus();
 }
-function toggleFlash(){
-fetch('/flash', {method:'POST'});}
+
+function toggleFlash(){ fetch('/flash', {method:'POST'}); }
+
+function sendCmd(cmd){ fetch('/command?cmd='+cmd); }
+
 function convertJpeg(){
-fetch('/convert-qr', {method:'POST'});}
-function sendCmd(cmd){
-fetch('/command?cmd='+cmd);}
+    // 1. Update text immediately
+    document.getElementById("statusDisplay").innerHTML = "Scanning... please wait";
+    document.getElementById("statusDisplay").style.color = "blue";
+
+    // 2. Trigger the ESP32 scan
+    fetch('/convert-qr', {method:'POST'});
+
+    // 3. Start auto-checking the status every 1 second
+    if(statusInterval) clearInterval(statusInterval);
+    statusInterval = setInterval(getLatestStatus, 1000);
+}
+
 function getLatestStatus() {
-    const display = document.getElementById("statusDisplay");
-    display.innerText = "Checking Status...";
-    display.style.color = "orange"; // Indicate fetching
+    fetch('/status')
+    .then(response => response.text())
+    .then(text => {
+        var display = document.getElementById("statusDisplay");
+        display.innerHTML = text;
 
-    fetch('/status') // The ESP32 must expose the last_upload_status via /status
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.text();
-        })
-        .then(statusText => {
-            display.innerText = "Last Upload Status: " + statusText;
-
-            // Apply color based on status
-            if (statusText.includes("OK")) {
-                display.style.color = "green";
-            } else if (statusText.includes("ERROR") || statusText.includes("INVALID") || statusText.includes("No status")) {
-                display.style.color = "red";
-            } else {
-                display.style.color = "black";
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching status:', error);
-            display.innerText = "Status Error: Failed to fetch";
+        // Change color based on result
+        if(text.includes("OK")) {
+            display.style.color = "green";
+            // Stop auto-checking if we found success
+            if(statusInterval && text.includes("uploaded")) clearInterval(statusInterval);
+        } else if (text.includes("ERR") || text.includes("failed")) {
             display.style.color = "red";
-        });
+        } else {
+            display.style.color = "black";
+        }
+    });
 }
 </script>
 </body>
